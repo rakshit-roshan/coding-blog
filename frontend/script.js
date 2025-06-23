@@ -1,4 +1,4 @@
-fetch('https://your-backend-url.onrender.com/api/posts')
+fetch('https://coding-blog-tt47.onrender.com/api/posts')
   .then(res => res.json())
   .then(data => {
     const container = document.getElementById('posts');
