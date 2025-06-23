@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head><title>Post</title></head>
+<body>
+  <div id="post"></div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+
+    fetch(`https://your-backend-url.onrender.com/api/posts/${id}`)
+      .then(res => res.json())
+      .then(post => {
+        document.getElementById('post').innerHTML = `
+          <h1>${post.title}</h1>
+          <p>${post.content}</p>
+        `;
+      });
+  </script>
+</body>
+</html>
