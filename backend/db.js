@@ -1,4 +1,4 @@
-const sqlite3 = require('sqlite3').verbose();
+const sqlite3 = require('sqlite3').verbose(); 
 const db = new sqlite3.Database('./blog.db');
 
 db.serialize(() => {
@@ -6,6 +6,8 @@ db.serialize(() => {
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
     content TEXT NOT NULL,
+    tags TEXT,
+    icon TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   )`);
 });

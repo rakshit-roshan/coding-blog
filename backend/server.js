@@ -26,17 +26,24 @@ app.get('/api/posts/:id', (req, res) => {
   });
 });
 
+
 // Create a new post
 app.post('/api/posts', (req, res) => {
-  const { title, content } = req.body;
+  const { title, content, tags, icon, date } = req.body;
   if (!title || !content) return res.status(400).json({ error: "Missing fields" });
 
-  db.run("INSERT INTO posts (title, content) VALUES (?, ?)",
-    [title, content],
-    function(err) {
+  const tagString = Array.isArray(tags) ? tags.join(',') : tags;
+  const created_at = date || new Date().toISOString().split('T')[0]; // default to today
+
+  db.run(
+    "INSERT INTO posts (title, content, tags, icon, created_at) VALUES (?, ?, ?, ?, ?)",
+    [title, content, tagString, icon, created_at],
+    function (err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ id: this.lastID });
-    });
+    }
+  );
 });
+
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
