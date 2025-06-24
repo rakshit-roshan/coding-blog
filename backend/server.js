@@ -17,23 +17,13 @@ app.get('/api/posts', (req, res) => {
   });
 });
 
-// Get single post
-app.get('/api/posts/:id', (req, res) => {
-  db.get("SELECT * FROM posts WHERE id = ?", [req.params.id], (err, row) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!row) return res.status(404).json({ error: "Post not found" });
-    res.json(row);
-  });
-});
-
-
 // Create a new post
 app.post('/api/posts', (req, res) => {
   const { title, content, tags, icon, date } = req.body;
-  if (!title || !content) return res.status(400).json({ error: "Missing fields" });
+  if (!title || !content) return res.status(400).json({ error: "Missing title or content" });
 
   const tagString = Array.isArray(tags) ? tags.join(',') : tags;
-  const created_at = date || new Date().toISOString().split('T')[0]; // default to today
+  const created_at = date || new Date().toISOString().split('T')[0];
 
   db.run(
     "INSERT INTO posts (title, content, tags, icon, created_at) VALUES (?, ?, ?, ?, ?)",
@@ -44,6 +34,5 @@ app.post('/api/posts', (req, res) => {
     }
   );
 });
-
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
