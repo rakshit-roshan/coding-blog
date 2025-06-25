@@ -7,7 +7,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-  origin: 'https://rakshitroshan.netlify.app/', // replace with your Netlify URL
+  origin: 'https://rakshitroshan.netlify.app', // replace with your Netlify URL
   credentials: true
 }));
 app.use(bodyParser.json());
