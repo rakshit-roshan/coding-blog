@@ -523,3 +523,13 @@ body {
     transform: rotate(360deg);
   }
 }
+
+.blog-post-detail .blog-tag {
+  background: #6a82fb;
+  color: #fff;
+  border-radius: 0.5rem;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.95rem;
+  margin-right: 0.3rem;
+  display: inline-block;
+}

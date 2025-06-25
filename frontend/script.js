@@ -5,13 +5,13 @@ if (postForm) {
     e.preventDefault();
 
     const title = document.getElementById('title').value.trim();
-    const excerpt = document.getElementById('excerpt').value.trim(); // maps to "content"
-    const tags = document.getElementById('tags').value.trim().split(',').map(tag => tag.trim());
+    const content = document.getElementById('content').value.trim();
+    const tags = document.getElementById('tags').value.trim().split(',').map(tag => tag.trim()).filter(Boolean);
     const icon = document.getElementById('icon').value.trim();
 
     const postData = {
       title,
-      content: excerpt,
+      content,
       tags,
       icon,
       date: new Date().toISOString().split('T')[0]
@@ -55,7 +55,7 @@ async function fetchAndDisplayPosts() {
     }
 
     blogGrid.innerHTML = posts.map(post => `
-      <a class="blog-card-modern" href="post.html?id=${post.id}">
+      <a target="_blank" class="blog-card-modern" href="post.html?id=${post.id}">
         <div class="blog-card-header">
           <i class="${post.icon || 'fas fa-pen'}"></i>
         </div>
