@@ -18,7 +18,7 @@ if (postForm) {
     };
 
     try {
-      const res = await fetch('https://coding-blog-tt47.onrender.com/api/posts', {
+      const res = await fetch('https://coding-blog-g5dt.onrender.com/api/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(postData)
