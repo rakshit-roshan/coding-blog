@@ -1,15 +1,24 @@
-const sqlite3 = require('sqlite3').verbose(); 
-const db = new sqlite3.Database('./blog.db');
+const { Pool } = require('pg');
 
-db.serialize(() => {
-  db.run(`CREATE TABLE IF NOT EXISTS posts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+});
+
+// Create table if it doesn't exist
+const createTableQuery = `
+  CREATE TABLE IF NOT EXISTS posts (
+    id SERIAL PRIMARY KEY,
     title TEXT NOT NULL,
     content TEXT NOT NULL,
     tags TEXT,
     icon TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
-  )`);
-});
+  )
+`;
 
-module.exports = db;
+pool.query(createTableQuery)
+  .then(() => console.log('Table ensured'))
+  .catch(err => console.error('Error creating table', err));
+
+module.exports = pool;
