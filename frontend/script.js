@@ -55,13 +55,17 @@ async function fetchAndDisplayPosts() {
     }
 
     blogGrid.innerHTML = posts.map(post => `
-      <a class="blog-card" href="post.html?id=${post.id}">
-        <div class="blog-icon"><i class="${post.icon || 'fas fa-pen'}"></i></div>
-        <h3>${post.title}</h3>
-        <p>${post.content}</p>
-        <div class="blog-meta">
-          <span>${post.created_at}</span>
-          ${post.tags ? `<span class="blog-tags">${post.tags.split(',').map(tag => `<span class="tag">${tag.trim()}</span>`).join(' ')}</span>` : ''}
+      <a class="blog-card-modern" href="post.html?id=${post.id}">
+        <div class="blog-card-header">
+          <i class="${post.icon || 'fas fa-pen'}"></i>
+        </div>
+        <div class="blog-card-body">
+          <h3 class="blog-card-title">${post.title}</h3>
+          <p class="blog-card-excerpt">${post.content.length > 120 ? post.content.slice(0, 120) + '...' : post.content}</p>
+        </div>
+        <div class="blog-card-footer">
+          <span class="blog-card-date">${post.created_at}</span>
+          ${post.tags ? `<span class="blog-card-tags">${post.tags.split(',').map(tag => `<span class="blog-tag">${tag.trim()}</span>`).join(' ')}</span>` : ''}
         </div>
       </a>
     `).join('');
