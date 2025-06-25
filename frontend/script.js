@@ -16,6 +16,8 @@ const messageInput = document.getElementById('messageInput');
 const currentUserSpan = document.getElementById('currentUser');
 const logoutBtn = document.getElementById('logoutBtn');
 const onlineList = document.getElementById('onlineList');
+const emailInput = document.getElementById('email');
+const passwordInput = document.getElementById('password');
 
 let isSignUp = false;
 
@@ -32,9 +34,13 @@ function updateAuthForm() {
     if (isSignUp) {
         authSubmit.textContent = 'Sign Up';
         toggleAuth.innerHTML = 'Already have an account? <strong>Sign In</strong>';
+        if (emailInput) emailInput.parentElement.style.display = 'block';
+        if (passwordInput) passwordInput.parentElement.style.display = 'block';
     } else {
         authSubmit.textContent = 'Sign In';
         toggleAuth.innerHTML = 'Don\'t have an account? <strong>Sign Up</strong>';
+        if (emailInput) emailInput.parentElement.style.display = 'none';
+        if (passwordInput) passwordInput.parentElement.style.display = 'block';
     }
 }
 
@@ -43,14 +49,32 @@ if (authForm) {
     authForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const username = document.getElementById('username').value.trim();
-        if (!username) return alert('Username required');
+        const email = emailInput ? emailInput.value.trim() : '';
+        const password = passwordInput ? passwordInput.value : '';
+        if (!username || (!isSignUp && !password) || (isSignUp && (!email || !password))) {
+            alert('Please fill in all required fields.');
+            return;
+        }
         try {
-            const res = await fetch('http://localhost:5000/api/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username })
-            });
-            if (!res.ok) throw new Error('Login failed');
+            let res;
+            if (isSignUp) {
+                res = await fetch('http://localhost:5000/api/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+            } else {
+                res = await fetch('http://localhost:5000/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+            }
+            if (!res.ok) {
+                const err = await res.json();
+                alert(err.error || 'Authentication failed.');
+                return;
+            }
             const user = await res.json();
             currentUser = user;
             showChatInterface();

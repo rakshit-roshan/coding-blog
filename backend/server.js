@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const pool = require('./db');
+const bcrypt = require('bcrypt');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -12,18 +13,38 @@ app.use(cors({
 }));
 app.use(bodyParser.json());
 
-// Login or signup
-app.post('/api/login', async (req, res) => {
-  const { username } = req.body;
-  if (!username) return res.status(400).json({ error: 'Username required' });
+// Signup
+app.post('/api/signup', async (req, res) => {
+  const { username, email, password } = req.body;
+  if (!username || !email || !password) return res.status(400).json({ error: 'All fields required' });
   try {
-    // Try to find user
-    let result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
-    if (result.rows.length === 0) {
-      // Signup
-      result = await pool.query('INSERT INTO users (username) VALUES ($1) RETURNING *', [username]);
+    // Check if user exists
+    const existing = await pool.query('SELECT * FROM users WHERE username = $1 OR email = $2', [username, email]);
+    if (existing.rows.length > 0) {
+      return res.status(409).json({ error: 'Username or email already exists' });
     }
+    const hashed = await bcrypt.hash(password, 10);
+    const result = await pool.query(
+      'INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id, username',
+      [username, email, hashed]
+    );
     res.json({ id: result.rows[0].id, username: result.rows[0].username });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Login
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
+  try {
+    const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+    if (result.rows.length === 0) return res.status(401).json({ error: 'Invalid credentials' });
+    const user = result.rows[0];
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(401).json({ error: 'Invalid credentials' });
+    res.json({ id: user.id, username: user.username });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
