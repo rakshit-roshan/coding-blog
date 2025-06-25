@@ -55,7 +55,7 @@ async function fetchAndDisplayPosts() {
     }
 
     blogGrid.innerHTML = posts.map(post => `
-      <div class="blog-card">
+      <a class="blog-card" href="post.html?id=${post.id}">
         <div class="blog-icon"><i class="${post.icon || 'fas fa-pen'}"></i></div>
         <h3>${post.title}</h3>
         <p>${post.content}</p>
@@ -63,8 +63,9 @@ async function fetchAndDisplayPosts() {
           <span>${post.created_at}</span>
           ${post.tags ? `<span class="blog-tags">${post.tags.split(',').map(tag => `<span class="tag">${tag.trim()}</span>`).join(' ')}</span>` : ''}
         </div>
-      </div>
+      </a>
     `).join('');
+    
   } catch (err) {
     if (loading) loading.style.display = 'none';
     blogGrid.innerHTML = '<p>Error loading blog posts.</p>';
