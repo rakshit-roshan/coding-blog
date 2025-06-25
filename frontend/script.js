@@ -58,13 +58,13 @@ if (authForm) {
         try {
             let res;
             if (isSignUp) {
-                res = await fetch('http://localhost:5000/api/signup', {
+                res = await fetch('https://coding-blog-kdzv.onrender.com/api/signup', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, email, password })
                 });
             } else {
-                res = await fetch('http://localhost:5000/api/login', {
+                res = await fetch('https://coding-blog-kdzv.onrender.com/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })
@@ -99,7 +99,7 @@ function showChatInterface() {
 async function fetchUsers() {
     // For now, get all users from messages
     try {
-        const res = await fetch('http://localhost:5000/api/messages');
+        const res = await fetch('https://coding-blog-kdzv.onrender.com/api/messages');
         if (!res.ok) throw new Error('Failed to fetch users');
         const msgs = await res.json();
         const userSet = new Set(msgs.map(m => m.username));
@@ -122,7 +122,7 @@ function renderOnlineUsers() {
 // --- Fetch & Render Messages ---
 async function fetchMessages() {
     try {
-        const res = await fetch('http://localhost:5000/api/messages');
+        const res = await fetch('https://coding-blog-kdzv.onrender.com/api/messages');
         if (!res.ok) throw new Error('Failed to fetch messages');
         messages = await res.json();
         renderMessages();
@@ -151,7 +151,7 @@ if (messageForm) {
         const content = messageInput.value.trim();
         if (!content || !currentUser) return;
         try {
-            await fetch('http://localhost:5000/api/messages', {
+            await fetch('https://coding-blog-kdzv.onrender.com/api/messages', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: currentUser.id, content })
