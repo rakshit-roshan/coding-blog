@@ -7,7 +7,7 @@
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
 
-    fetch(`https://your-backend-url.onrender.com/api/posts/${id}`)
+    fetch(`https://https://coding-blog-g5dt.onrender.com/api/posts/${id}`)
       .then(res => res.json())
       .then(post => {
         document.getElementById('post').innerHTML = `
