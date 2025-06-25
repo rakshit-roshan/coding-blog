@@ -5,20 +5,25 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
-// Create table if it doesn't exist
-const createTableQuery = `
-  CREATE TABLE IF NOT EXISTS posts (
+// Create users and messages tables if not exist
+const createUsersTable = `
+  CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
-    title TEXT NOT NULL,
-    content TEXT NOT NULL,
-    tags TEXT,
-    icon TEXT,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
-  )
-`;
+    username TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`;
 
-pool.query(createTableQuery)
-  .then(() => console.log('Table ensured'))
-  .catch(err => console.error('Error creating table', err));
+const createMessagesTable = `
+  CREATE TABLE IF NOT EXISTS messages (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`;
+
+pool.query(createUsersTable)
+  .then(() => pool.query(createMessagesTable))
+  .then(() => console.log('Tables ensured'))
+  .catch(err => console.error('Error creating tables', err));
 
 module.exports = pool;
