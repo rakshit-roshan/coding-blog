@@ -5,6 +5,7 @@ const pool = require('./db');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -142,6 +143,216 @@ app.delete('/api/messages/:id', async (req, res) => {
     if (result.rows[0].user_id !== user_id) return res.status(403).json({ error: 'Not authorized to delete this message' });
     await pool.query('DELETE FROM messages WHERE id = $1', [messageId]);
     res.json({ message: 'Message deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+const generateGroupId = async () => {
+  let groupId;
+  let exists = true;
+  while (exists) {
+    groupId = Math.floor(100000 + Math.random() * 900000).toString();
+    const res = await pool.query('SELECT 1 FROM groups WHERE group_id = $1', [groupId]);
+    exists = res.rows.length > 0;
+  }
+  return groupId;
+};
+
+// Create group
+app.post('/api/groups', async (req, res) => {
+  const { name, member_emails, created_by } = req.body;
+  if (!name || !created_by) return res.status(400).json({ error: 'Group name and creator required' });
+  try {
+    const groupId = await generateGroupId();
+    const groupRes = await pool.query(
+      'INSERT INTO groups (group_id, name, created_by) VALUES ($1, $2, $3) RETURNING id, group_id',
+      [groupId, name, created_by]
+    );
+    const groupDbId = groupRes.rows[0].id;
+    // Add creator as member
+    await pool.query('INSERT INTO group_members (group_id, user_id) VALUES ($1, $2)', [groupDbId, created_by]);
+    // Add other members by email
+    if (Array.isArray(member_emails)) {
+      for (const email of member_emails) {
+        const userRes = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+        if (userRes.rows.length > 0) {
+          await pool.query('INSERT INTO group_members (group_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [groupDbId, userRes.rows[0].id]);
+        }
+      }
+    }
+    res.json({ group_id: groupId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Join group (with approval workflow)
+app.post('/api/groups/join', async (req, res) => {
+  const { group_id, user_id } = req.body;
+  if (!group_id || !user_id) return res.status(400).json({ error: 'Group ID and user ID required' });
+  try {
+    const groupRes = await pool.query('SELECT id, name FROM groups WHERE group_id = $1', [group_id]);
+    if (groupRes.rows.length === 0) return res.status(404).json({ error: 'Group not found' });
+    const groupDbId = groupRes.rows[0].id;
+    const groupName = groupRes.rows[0].name;
+    // Check if already a member
+    const memberRes = await pool.query('SELECT 1 FROM group_members WHERE group_id = $1 AND user_id = $2', [groupDbId, user_id]);
+    if (memberRes.rows.length > 0) return res.status(400).json({ error: 'Already a group member' });
+    // Create join request
+    const joinReqRes = await pool.query('INSERT INTO group_join_requests (group_id, user_id) VALUES ($1, $2) RETURNING id', [groupDbId, user_id]);
+    const requestId = joinReqRes.rows[0].id;
+    // Get all current group members
+    const membersRes = await pool.query('SELECT users.email, users.id FROM group_members JOIN users ON group_members.user_id = users.id WHERE group_members.group_id = $1', [groupDbId]);
+    // For each member, create approval record and send email
+    for (const member of membersRes.rows) {
+      const token = uuidv4();
+      await pool.query('INSERT INTO group_join_approvals (request_id, approver_id, token) VALUES ($1, $2, $3)', [requestId, member.id, token]);
+      // Send email
+      const approveUrl = `https://YOUR_FRONTEND_URL/api/groups/join/approve/${token}`;
+      const denyUrl = `https://YOUR_FRONTEND_URL/api/groups/join/deny/${token}`;
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: member.email,
+        subject: `Approve new member for group ${groupName}`,
+        html: `<p>A user wants to join your group <b>${groupName}</b> (ID: ${group_id}).<br>
+        Approve: <a href="${approveUrl}">Approve</a><br>
+        Deny: <a href="${denyUrl}">Deny</a></p>`
+      });
+    }
+    res.json({ message: 'Join request sent. Waiting for all members to approve.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Approve join request
+app.get('/api/groups/join/approve/:token', async (req, res) => {
+  const { token } = req.params;
+  try {
+    const approvalRes = await pool.query('SELECT * FROM group_join_approvals WHERE token = $1', [token]);
+    if (approvalRes.rows.length === 0) return res.status(404).send('Invalid or expired approval link.');
+    const approval = approvalRes.rows[0];
+    if (approval.status !== 'pending') return res.send('You have already responded to this request.');
+    await pool.query('UPDATE group_join_approvals SET status = $1 WHERE token = $2', ['approved', token]);
+    // Check if all approvals are done
+    const allApprovals = await pool.query('SELECT status FROM group_join_approvals WHERE request_id = $1', [approval.request_id]);
+    if (allApprovals.rows.every(a => a.status === 'approved')) {
+      // Add user to group
+      const joinReq = await pool.query('SELECT group_id, user_id FROM group_join_requests WHERE id = $1', [approval.request_id]);
+      if (joinReq.rows.length > 0) {
+        await pool.query('INSERT INTO group_members (group_id, user_id) VALUES ($1, $2)', [joinReq.rows[0].group_id, joinReq.rows[0].user_id]);
+        await pool.query('UPDATE group_join_requests SET status = $1 WHERE id = $2', ['approved', approval.request_id]);
+      }
+    }
+    res.send('You have approved the join request.');
+  } catch (err) {
+    res.status(500).send('Error processing approval.');
+  }
+});
+
+// Deny join request
+app.get('/api/groups/join/deny/:token', async (req, res) => {
+  const { token } = req.params;
+  try {
+    const approvalRes = await pool.query('SELECT * FROM group_join_approvals WHERE token = $1', [token]);
+    if (approvalRes.rows.length === 0) return res.status(404).send('Invalid or expired denial link.');
+    const approval = approvalRes.rows[0];
+    if (approval.status !== 'pending') return res.send('You have already responded to this request.');
+    await pool.query('UPDATE group_join_approvals SET status = $1 WHERE token = $2', ['denied', token]);
+    await pool.query('UPDATE group_join_requests SET status = $1 WHERE id = $2', ['denied', approval.request_id]);
+    res.send('You have denied the join request.');
+  } catch (err) {
+    res.status(500).send('Error processing denial.');
+  }
+});
+
+// Get user's groups
+app.get('/api/groups/:user_id', async (req, res) => {
+  const user_id = req.params.user_id;
+  try {
+    const result = await pool.query(
+      'SELECT g.group_id, g.name FROM groups g JOIN group_members gm ON g.id = gm.group_id WHERE gm.user_id = $1',
+      [user_id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get messages for a group
+app.get('/api/groups/:group_id/messages', async (req, res) => {
+  const group_id = req.params.group_id;
+  try {
+    const groupRes = await pool.query('SELECT id FROM groups WHERE group_id = $1', [group_id]);
+    if (groupRes.rows.length === 0) return res.status(404).json({ error: 'Group not found' });
+    const groupDbId = groupRes.rows[0].id;
+    const result = await pool.query(
+      'SELECT messages.id, messages.content, messages.created_at, messages.user_id, users.username FROM messages JOIN users ON messages.user_id = users.id WHERE messages.group_id = $1 ORDER BY messages.created_at ASC',
+      [groupDbId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Send message to a group
+app.post('/api/groups/:group_id/messages', async (req, res) => {
+  const group_id = req.params.group_id;
+  const { user_id, content } = req.body;
+  if (!user_id || !content) return res.status(400).json({ error: 'user_id and content required' });
+  try {
+    const groupRes = await pool.query('SELECT id FROM groups WHERE group_id = $1', [group_id]);
+    if (groupRes.rows.length === 0) return res.status(404).json({ error: 'Group not found' });
+    const groupDbId = groupRes.rows[0].id;
+    // Check if user is a member
+    const memberRes = await pool.query('SELECT 1 FROM group_members WHERE group_id = $1 AND user_id = $2', [groupDbId, user_id]);
+    if (memberRes.rows.length === 0) return res.status(403).json({ error: 'Not a group member' });
+    const result = await pool.query(
+      'INSERT INTO messages (user_id, group_id, content) VALUES ($1, $2, $3) RETURNING id, created_at',
+      [user_id, groupDbId, content]
+    );
+    res.json({ id: result.rows[0].id, created_at: result.rows[0].created_at });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get pending group join requests for a user
+app.get('/api/groups/pending/:user_id', async (req, res) => {
+  const user_id = req.params.user_id;
+  try {
+    const result = await pool.query(
+      `SELECT g.group_id, g.name FROM groups g
+       JOIN group_join_requests r ON g.id = r.group_id
+       WHERE r.user_id = $1 AND r.status = 'pending'`,
+      [user_id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get join request approval status for a group and user
+app.get('/api/groups/:group_id/join-status/:user_id', async (req, res) => {
+  const { group_id, user_id } = req.params;
+  try {
+    // Find the latest pending join request for this user and group
+    const reqRes = await pool.query(
+      `SELECT id FROM group_join_requests WHERE group_id = (SELECT id FROM groups WHERE group_id = $1) AND user_id = $2 AND status = 'pending' ORDER BY created_at DESC LIMIT 1`,
+      [group_id, user_id]
+    );
+    if (reqRes.rows.length === 0) return res.json({ approvals: [] });
+    const requestId = reqRes.rows[0].id;
+    // Get all approvals for this request
+    const approvalsRes = await pool.query(
+      `SELECT u.username, u.email, a.status FROM group_join_approvals a JOIN users u ON a.approver_id = u.id WHERE a.request_id = $1`,
+      [requestId]
+    );
+    res.json({ approvals: approvalsRes.rows });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

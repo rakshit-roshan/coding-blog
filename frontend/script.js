@@ -24,6 +24,17 @@ const resetRequestForm = document.getElementById('resetRequestForm');
 const resetEmailInput = document.getElementById('resetEmail');
 const resetRequestMsg = document.getElementById('resetRequestMsg');
 const backToLogin = document.getElementById('backToLogin');
+const groupSection = document.getElementById('groupSection');
+const createGroupBtn = document.getElementById('createGroupBtn');
+const joinGroupBtn = document.getElementById('joinGroupBtn');
+const createGroupForm = document.getElementById('createGroupForm');
+const joinGroupForm = document.getElementById('joinGroupForm');
+const cancelCreateGroup = document.getElementById('cancelCreateGroup');
+const cancelJoinGroup = document.getElementById('cancelJoinGroup');
+const createGroupMsg = document.getElementById('createGroupMsg');
+const joinGroupMsg = document.getElementById('joinGroupMsg');
+const userGroupsList = document.getElementById('userGroupsList');
+let selectedGroupId = null;
 
 let isSignUp = false;
 
@@ -99,7 +110,7 @@ if (authForm) {
 // --- Show Chat UI ---
 function showChatInterface() {
     if (authSection) authSection.style.display = 'none';
-    if (chatSection) chatSection.style.display = 'flex';
+    showGroupSection();
     if (currentUserSpan) currentUserSpan.textContent = currentUser.username;
     fetchUsers();
     fetchMessages();
@@ -247,6 +258,179 @@ if (resetRequestForm) {
         } catch {
             resetRequestMsg.textContent = 'Failed to send reset link.';
         }
+    });
+}
+
+// --- Group Section ---
+function showGroupSection() {
+    if (authSection) authSection.style.display = 'none';
+    if (groupSection) groupSection.style.display = 'flex';
+    if (chatSection) chatSection.style.display = 'none';
+    fetchUserGroups();
+}
+
+function showChatSection() {
+    if (groupSection) groupSection.style.display = 'none';
+    if (chatSection) chatSection.style.display = 'flex';
+}
+
+// Group option buttons
+if (createGroupBtn) createGroupBtn.onclick = () => {
+    createGroupForm.style.display = 'block';
+    joinGroupForm.style.display = 'none';
+    createGroupMsg.textContent = '';
+};
+if (joinGroupBtn) joinGroupBtn.onclick = () => {
+    joinGroupForm.style.display = 'block';
+    createGroupForm.style.display = 'none';
+    joinGroupMsg.textContent = '';
+};
+if (cancelCreateGroup) cancelCreateGroup.onclick = () => {
+    createGroupForm.style.display = 'none';
+};
+if (cancelJoinGroup) cancelJoinGroup.onclick = () => {
+    joinGroupForm.style.display = 'none';
+};
+
+// Create group
+if (createGroupForm) {
+    createGroupForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('groupName').value.trim();
+        const members = document.getElementById('groupMembers').value.trim();
+        const member_emails = members ? members.split(',').map(m => m.trim()).filter(Boolean) : [];
+        createGroupMsg.textContent = '';
+        try {
+            const res = await fetch('https://coding-blog-kdzv.onrender.com/api/groups', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, member_emails, created_by: currentUser.id })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                createGroupMsg.textContent = 'Group created! Share this Group ID: ' + data.group_id;
+                fetchUserGroups();
+            } else {
+                createGroupMsg.textContent = data.error || 'Failed to create group.';
+            }
+        } catch {
+            createGroupMsg.textContent = 'Failed to create group.';
+        }
+    });
+}
+// Join group
+if (joinGroupForm) {
+    joinGroupForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const group_id = document.getElementById('joinGroupId').value.trim();
+        joinGroupMsg.textContent = '';
+        try {
+            const res = await fetch('https://coding-blog-kdzv.onrender.com/api/groups/join', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ group_id, user_id: currentUser.id })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                joinGroupMsg.textContent = 'Join request sent! Waiting for all members to approve.';
+                fetchUserGroups();
+            } else {
+                joinGroupMsg.textContent = data.error || 'Failed to join group.';
+            }
+        } catch {
+            joinGroupMsg.textContent = 'Failed to join group.';
+        }
+    });
+}
+// Fetch user's groups (with pending status)
+async function fetchUserGroups() {
+    if (!currentUser) return;
+    userGroupsList.innerHTML = '<b>Your Groups:</b> Loading...';
+    try {
+        const res = await fetch(`https://coding-blog-kdzv.onrender.com/api/groups/${currentUser.id}`);
+        const groups = await res.json();
+        // Fetch pending join requests for this user
+        let pendingGroups = [];
+        try {
+            const pendingRes = await fetch(`https://coding-blog-kdzv.onrender.com/api/groups/pending/${currentUser.id}`);
+            pendingGroups = await pendingRes.json();
+        } catch {}
+        let html = '<b>Your Groups:</b><ul>';
+        if (Array.isArray(groups) && groups.length > 0) {
+            html += groups.map(g => `<li><button class=\"btn btn-link\" onclick=\"window.selectGroup('${g.group_id}','${g.name}')\">${g.name} (${g.group_id})</button></li>`).join('');
+        }
+        if (Array.isArray(pendingGroups) && pendingGroups.length > 0) {
+            for (const g of pendingGroups) {
+                html += `<li>${g.name} (${g.group_id}) <span style=\"color:orange;\">(Pending Approval)</span>`;
+                html += `<div id=\"approvalStatus_${g.group_id}\" style=\"font-size:12px; margin-top:4px;\">Loading approval status...</div></li>`;
+                // Fetch and display approval status
+                fetchApprovalStatus(g.group_id);
+            }
+        }
+        html += '</ul>';
+        userGroupsList.innerHTML = html;
+    } catch {
+        userGroupsList.innerHTML = '<b>Your Groups:</b> Failed to load.';
+    }
+}
+// Fetch and display approval status for a pending group
+async function fetchApprovalStatus(group_id) {
+    if (!currentUser) return;
+    const statusDiv = document.getElementById(`approvalStatus_${group_id}`);
+    if (!statusDiv) return;
+    try {
+        const res = await fetch(`https://coding-blog-kdzv.onrender.com/api/groups/${group_id}/join-status/${currentUser.id}`);
+        const data = await res.json();
+        if (Array.isArray(data.approvals) && data.approvals.length > 0) {
+            statusDiv.innerHTML = data.approvals.map(a => `<span style=\"margin-right:8px;\">${a.username || a.email}: <b style=\"color:${a.status==='approved'?'green':a.status==='denied'?'red':'orange'}\">${a.status}</b></span>`).join('');
+        } else {
+            statusDiv.innerHTML = 'No approval data.';
+        }
+    } catch {
+        statusDiv.innerHTML = 'Failed to load approval status.';
+    }
+}
+// Prevent entering group chat if not a member
+window.selectGroup = async function(group_id, group_name) {
+    // Check if user is a member
+    const res = await fetch(`https://coding-blog-kdzv.onrender.com/api/groups/${currentUser.id}`);
+    const groups = await res.json();
+    const isMember = Array.isArray(groups) && groups.some(g => g.group_id === group_id);
+    if (!isMember) {
+        alert('You are not a member of this group yet. Wait for approval.');
+        return;
+    }
+    selectedGroupId = group_id;
+    showChatSection();
+    document.querySelector('.chat-title').textContent = group_name + ' (' + group_id + ')';
+    fetchGroupMessages();
+    if (pollingInterval) clearInterval(pollingInterval);
+    pollingInterval = setInterval(fetchGroupMessages, 3000);
+};
+// Fetch group messages
+async function fetchGroupMessages() {
+    if (!selectedGroupId) return;
+    try {
+        const res = await fetch(`https://coding-blog-kdzv.onrender.com/api/groups/${selectedGroupId}/messages`);
+        messages = await res.json();
+        renderMessages();
+    } catch {}
+}
+// Send message to group
+if (messageForm) {
+    messageForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const content = messageInput.value.trim();
+        if (!content || !currentUser || !selectedGroupId) return;
+        try {
+            await fetch(`https://coding-blog-kdzv.onrender.com/api/groups/${selectedGroupId}/messages`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: currentUser.id, content })
+            });
+            messageInput.value = '';
+            fetchGroupMessages();
+        } catch {}
     });
 }
 
