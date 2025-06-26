@@ -28,7 +28,7 @@ const groupController = {
         await sendMail({
           from: process.env.EMAIL_USER,
           to: creatorEmail,
-          subject: 'Your Group ID for ChatPro',
+          subject: 'Your Group ID for Secure Tunnel',
           html: `<p>Your group <b>${name}</b> has been created.<br>Group ID: <b>${groupId}</b><br>Share this ID with others to let them join your group.</p>`
         });
       }
