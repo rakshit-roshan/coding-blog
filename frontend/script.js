@@ -18,6 +18,12 @@ const logoutBtn = document.getElementById('logoutBtn');
 const onlineList = document.getElementById('onlineList');
 const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
+const resetSection = document.getElementById('resetSection');
+const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+const resetRequestForm = document.getElementById('resetRequestForm');
+const resetEmailInput = document.getElementById('resetEmail');
+const resetRequestMsg = document.getElementById('resetRequestMsg');
+const backToLogin = document.getElementById('backToLogin');
 
 let isSignUp = false;
 
@@ -178,6 +184,45 @@ if (logoutBtn) {
         if (authForm) authForm.reset();
         isSignUp = false;
         updateAuthForm();
+    });
+}
+
+// --- Reset Password ---
+if (forgotPasswordLink) {
+    forgotPasswordLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (authSection) authSection.style.display = 'none';
+        if (resetSection) resetSection.style.display = 'flex';
+    });
+}
+if (backToLogin) {
+    backToLogin.addEventListener('click', () => {
+        if (resetSection) resetSection.style.display = 'none';
+        if (authSection) authSection.style.display = 'flex';
+        if (resetRequestMsg) resetRequestMsg.textContent = '';
+        if (resetRequestForm) resetRequestForm.reset();
+    });
+}
+if (resetRequestForm) {
+    resetRequestForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = resetEmailInput.value.trim();
+        if (!email) return;
+        try {
+            const res = await fetch('https://coding-blog-kdzv.onrender.com/api/request-password-reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                resetRequestMsg.textContent = 'Reset link sent! Check your email.';
+            } else {
+                resetRequestMsg.textContent = data.error || 'Failed to send reset link.';
+            }
+        } catch {
+            resetRequestMsg.textContent = 'Failed to send reset link.';
+        }
     });
 }
 
