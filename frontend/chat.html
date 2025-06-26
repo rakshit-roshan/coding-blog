@@ -34,12 +34,6 @@
     <!-- Main Content -->
     <main class="flex-1 flex flex-col items-center justify-start p-12">
       <div class="w-full bg-white rounded-xl shadow-xl p-8 border border-gray-200 flex "  style="height: 100%;">
-        <div class="flex items-center justify-between mb-6">
-          <div class="flex items-center gap-2">
-            <span class="material-icons text-indigo-600">chat</span>
-            <h2 class="text-2xl font-bold text-gray-800" id="chatGroupName">Group Chat</h2>
-          </div>
-        </div>
         <div class="flex flex-1 gap-6 overflow-hidden">
           <!-- Sidebar: Online Users -->
           <aside class="w-56 bg-gray-50 border-r border-gray-200 rounded-lg p-4 flex flex-col">
@@ -79,7 +73,7 @@
     }
     const groupId = selectedGroup.group_id;
     const groupName = selectedGroup.group_name || 'Group Chat';
-    document.getElementById('chatGroupName').textContent = groupName;
+    //document.getElementById('chatGroupName').textContent = groupName;
 
     // --- Sidebar: Fetch and render user's groups ---
     const groupList = document.getElementById('groupList');
