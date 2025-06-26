@@ -3,114 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChatPro - Professional Messaging</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Secure Tunnel - Login</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🔒</text></svg>">
+    <meta name="theme-color" content="#f8fafc">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>body { font-family: 'Roboto', 'Inter', Arial, sans-serif; }</style>
 </head>
-<body>
-    <div class="app-container">
-        <!-- Auth Section -->
-        <div id="authSection" class="auth-section">
-            <div class="auth-card">
-                <div class="brand">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Google.png" alt="Logo" class="brand-logo">
-                    <h1>ChatPro</h1>
-                    <p>Professional Team Communication</p>
-                </div>
-                <form id="authForm">
-                    <div class="form-group">
-                        <label for="username">Username</label>
-                        <input type="text" id="username" name="username" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" name="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <input type="password" id="password" name="password" required>
-                    </div>
-                    <div class="form-group">
-                        <a href="#" id="forgotPasswordLink">Forgot Password?</a>
-                    </div>
-                    <button type="submit" class="btn btn-primary" id="authSubmit">Sign In</button>
-                    <button type="button" class="btn btn-secondary" id="toggleAuth">Don't have an account? <strong>Sign Up</strong></button>
-                </form>
-            </div>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center">
+    <div class="w-full max-w-md bg-white rounded-xl shadow-xl p-8 border border-gray-200">
+        <div class="flex flex-col items-center mb-8">
+            <span class="text-indigo-600 text-4xl mb-2 material-icons">lock</span>
+            <h1 class="text-2xl font-bold text-gray-800 mb-1">Sign in to Secure Tunnel</h1>
+            <p class="text-gray-500 text-base">Professional and Secure Team Communication channel</p>
         </div>
-        <!-- Password Reset Section (hidden by default) -->
-        <div id="resetSection" class="auth-section" style="display:none;">
-            <div class="auth-card">
-                <h2>Reset Password</h2>
-                <form id="resetRequestForm">
-                    <div class="form-group">
-                        <label for="resetEmail">Enter your email</label>
-                        <input type="email" id="resetEmail" name="resetEmail" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Send Reset Link</button>
-                    <button type="button" class="btn btn-secondary" id="backToLogin">Back to Login</button>
-                </form>
-                <div id="resetRequestMsg"></div>
+        <form id="authForm" class="w-full space-y-5">
+            <div>
+                <label for="username" class="block text-gray-700 font-semibold mb-1">Username</label>
+                <input type="text" id="username" name="username" required class="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition" />
             </div>
-        </div>
-        <!-- Group Section (hidden by default) -->
-        <div id="groupSection" class="auth-section" style="display:none;">
-            <div class="auth-card">
-                <h2>Welcome!</h2>
-                <div id="groupOptions">
-                    <button class="btn btn-primary" id="createGroupBtn">Create New Group</button>
-                    <button class="btn btn-secondary" id="joinGroupBtn">Join Existing Group</button>
-                </div>
-                <form id="createGroupForm" style="display:none;">
-                    <h3>Create Group</h3>
-                    <div class="form-group">
-                        <label for="groupName">Group Name</label>
-                        <input type="text" id="groupName" name="groupName" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="groupMembers">Add Members (comma-separated emails)</label>
-                        <input type="text" id="groupMembers" name="groupMembers" placeholder="email1@example.com, email2@example.com">
-                    </div>
-                    <button type="submit" class="btn btn-primary">Create Group</button>
-                    <button type="button" class="btn btn-secondary" id="cancelCreateGroup">Cancel</button>
-                    <div id="createGroupMsg"></div>
-                </form>
-                <form id="joinGroupForm" style="display:none;">
-                    <h3>Join Group</h3>
-                    <div class="form-group">
-                        <label for="joinGroupId">Enter 6-digit Group ID</label>
-                        <input type="text" id="joinGroupId" name="joinGroupId" maxlength="6" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Join Group</button>
-                    <button type="button" class="btn btn-secondary" id="cancelJoinGroup">Cancel</button>
-                    <div id="joinGroupMsg"></div>
-                </form>
-                <div id="userGroupsList" style="margin-top:20px;"></div>
+            <div>
+                <label for="email" class="block text-gray-700 font-semibold mb-1">Email</label>
+                <input type="email" id="email" name="email" required class="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition" />
             </div>
-        </div>
-        <!-- Chat Section -->
-        <div id="chatSection" class="chat-section">
-            <div class="chat-header">
-                <div class="chat-title">ChatPro</div>
-                <div class="user-info">
-                    <span id="currentUser"></span>
-                    <button class="logout-btn" id="logoutBtn">Logout</button>
-                </div>
+            <div>
+                <label for="password" class="block text-gray-700 font-semibold mb-1">Password</label>
+                <input type="password" id="password" name="password" required class="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition" />
             </div>
-            <div class="chat-body">
-                <aside class="sidebar">
-                    <h3>Online Users</h3>
-                    <ul id="onlineList" class="user-list"></ul>
-                </aside>
-                <main class="chat-main">
-                    <div id="approvalStatusRealtime" style="display:none; margin-bottom:10px;"></div>
-                    <div id="chatMessages" class="chat-messages"></div>
-                    <form id="messageForm" class="chat-input">
-                        <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off">
-                        <button type="submit" class="send-btn">Send</button>
-                    </form>
-                </main>
+            <div class="flex justify-between items-center">
+                <a href="#" id="forgotPasswordLink" class="text-indigo-600 hover:underline text-sm">Forgot Password?</a>
             </div>
-        </div>
+            <button type="submit" class="w-full py-3 rounded-lg bg-indigo-600 text-white font-bold text-lg shadow hover:bg-indigo-700 transition" id="authSubmit">Sign In</button>
+            <button type="button" class="w-full py-3 rounded-lg border-2 border-indigo-600 text-indigo-600 font-bold text-lg bg-transparent hover:bg-indigo-600 hover:text-white transition" id="toggleAuth">Don't have an account? <strong>Sign Up</strong></button>
+        </form>
     </div>
     <script src="script.js"></script>
 </body>
