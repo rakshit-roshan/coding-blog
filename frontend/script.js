@@ -79,7 +79,8 @@ if (authForm) {
                 alert(err.error || 'Authentication failed.');
                 return;
             }
-            // On success, redirect to group page
+            const user = await res.json();
+            localStorage.setItem('currentUser', JSON.stringify(user));
             window.location.href = 'group.html';
         } catch (err) {
             alert('Login/Signup failed.');
