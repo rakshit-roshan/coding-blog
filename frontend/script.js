@@ -26,14 +26,18 @@ function updateAuthForm() {
     if (isSignUp) {
         authSubmit.textContent = 'Sign Up';
         toggleAuth.innerHTML = 'Already have an account? <strong>Sign In</strong>';
-        if (emailInput) emailInput.parentElement.style.display = 'block';
-        if (emailInput) emailInput.required = true;
+        if (emailInput) {
+            emailInput.parentElement.style.display = 'block';
+            emailInput.required = true;
+        }
         if (passwordInput) passwordInput.parentElement.style.display = 'block';
     } else {
         authSubmit.textContent = 'Sign In';
         toggleAuth.innerHTML = 'Don\'t have an account? <strong>Sign Up</strong>';
-        if (emailInput) emailInput.parentElement.style.display = 'block';
-        if (emailInput) emailInput.required = true;
+        if (emailInput) {
+            emailInput.parentElement.style.display = 'none';
+            emailInput.required = false;
+        }
         if (passwordInput) passwordInput.parentElement.style.display = 'block';
     }
 }
@@ -44,9 +48,16 @@ if (authForm) {
         const username = document.getElementById('username').value.trim();
         const email = emailInput ? emailInput.value.trim() : '';
         const password = passwordInput ? passwordInput.value : '';
-        if (!username || !email || !password) {
-            alert('Please fill in all required fields.');
-            return;
+        if (isSignUp) {
+            if (!username || !email || !password) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+        } else {
+            if (!username || !password) {
+                alert('Please fill in all required fields.');
+                return;
+            }
         }
         try {
             let res;
