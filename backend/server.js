@@ -56,7 +56,7 @@ app.post('/api/login', async (req, res) => {
 app.get('/api/messages', async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT messages.id, messages.content, messages.created_at, users.username FROM messages JOIN users ON messages.user_id = users.id ORDER BY messages.created_at ASC'
+      'SELECT messages.id, messages.content, messages.created_at, messages.user_id, users.username FROM messages JOIN users ON messages.user_id = users.id ORDER BY messages.created_at ASC'
     );
     res.json(result.rows);
   } catch (err) {
@@ -125,6 +125,23 @@ app.post('/api/reset-password', async (req, res) => {
     const hashed = await bcrypt.hash(password, 10);
     await pool.query('UPDATE users SET password = $1, reset_token = NULL, reset_token_expiry = NULL WHERE reset_token = $2', [hashed, token]);
     res.json({ message: 'Password has been reset' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete a message
+app.delete('/api/messages/:id', async (req, res) => {
+  const messageId = req.params.id;
+  const { user_id } = req.body;
+  if (!user_id) return res.status(400).json({ error: 'user_id required' });
+  try {
+    // Check if the message belongs to the user
+    const result = await pool.query('SELECT * FROM messages WHERE id = $1', [messageId]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Message not found' });
+    if (result.rows[0].user_id !== user_id) return res.status(403).json({ error: 'Not authorized to delete this message' });
+    await pool.query('DELETE FROM messages WHERE id = $1', [messageId]);
+    res.json({ message: 'Message deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -150,8 +150,32 @@ function renderMessages() {
         div.innerHTML = `
             <div class="meta">${msg.username} • ${new Date(msg.created_at).toLocaleTimeString()}</div>
             <div class="content">${msg.content}</div>
+            ${currentUser && msg.user_id === currentUser.id ? '<div class="delete-message" style="text-align:right;"><span class="delete-icon" data-id="' + msg.id + '" style="cursor:pointer; color:#e74c3c; font-size:14px;">🗑️ Delete</span></div>' : ''}
         `;
         chatMessages.appendChild(div);
+    });
+    // Add event listeners for delete icons
+    document.querySelectorAll('.delete-icon').forEach(icon => {
+        icon.addEventListener('click', async (e) => {
+            const messageId = e.target.getAttribute('data-id');
+            if (!messageId || !currentUser) return;
+            if (!confirm('Are you sure you want to delete this message?')) return;
+            try {
+                const res = await fetch(`https://coding-blog-kdzv.onrender.com/api/messages/${messageId}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: currentUser.id })
+                });
+                if (res.ok) {
+                    fetchMessages();
+                } else {
+                    const data = await res.json();
+                    alert(data.error || 'Failed to delete message.');
+                }
+            } catch {
+                alert('Failed to delete message.');
+            }
+        });
     });
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
