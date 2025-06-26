@@ -10,6 +10,14 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
 app.use(cors({
   origin: 'https://rakshitroshan.netlify.app', // Update to your Netlify domain
   credentials: true
@@ -93,14 +101,6 @@ app.post('/api/request-password-reset', async (req, res) => {
     const expiry = new Date(Date.now() + 1000 * 60 * 60); // 1 hour from now
     await pool.query('UPDATE users SET reset_token = $1, reset_token_expiry = $2 WHERE email = $3', [token, expiry, email]);
 
-    // Configure nodemailer (example with Gmail, replace with your SMTP info)
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-      }
-    });
     const resetUrl = `https://rakshitroshan.netlify.app/reset-password.html?token=${token}`;
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
@@ -220,8 +220,8 @@ app.post('/api/groups/join', async (req, res) => {
       const token = uuidv4();
       await pool.query('INSERT INTO group_join_approvals (request_id, approver_id, token) VALUES ($1, $2, $3)', [requestId, member.id, token]);
       // Send email
-      const approveUrl = `https://YOUR_FRONTEND_URL/api/groups/join/approve/${token}`;
-      const denyUrl = `https://YOUR_FRONTEND_URL/api/groups/join/deny/${token}`;
+      const approveUrl = `https://rakshitroshan.netlify.app/api/groups/join/approve/${token}`;
+      const denyUrl = `https://rakshitroshan.netlify.appL/api/groups/join/deny/${token}`;
       await transporter.sendMail({
         from: process.env.EMAIL_USER,
         to: member.email,

@@ -347,33 +347,7 @@ if (joinGroupForm) {
 // Fetch user's groups (with pending status)
 async function fetchUserGroups() {
     if (!currentUser) return;
-    userGroupsList.innerHTML = '<b>Your Groups:</b> Loading...';
-    try {
-        const res = await fetch(`https://coding-blog-kdzv.onrender.com/api/groups/${currentUser.id}`);
-        const groups = await res.json();
-        // Fetch pending join requests for this user
-        let pendingGroups = [];
-        try {
-            const pendingRes = await fetch(`https://coding-blog-kdzv.onrender.com/api/groups/pending/${currentUser.id}`);
-            pendingGroups = await pendingRes.json();
-        } catch {}
-        let html = '<b>Your Groups:</b><ul>';
-        if (Array.isArray(groups) && groups.length > 0) {
-            html += groups.map(g => `<li><button class=\"btn btn-link\" onclick=\"window.selectGroup('${g.group_id}','${g.name}')\">${g.name} (${g.group_id})</button></li>`).join('');
-        }
-        if (Array.isArray(pendingGroups) && pendingGroups.length > 0) {
-            for (const g of pendingGroups) {
-                html += `<li>${g.name} (${g.group_id}) <span style=\"color:orange;\">(Pending Approval)</span>`;
-                html += `<div id=\"approvalStatus_${g.group_id}\" style=\"font-size:12px; margin-top:4px;\">Loading approval status...</div></li>`;
-                // Fetch and display approval status
-                fetchApprovalStatus(g.group_id);
-            }
-        }
-        html += '</ul>';
-        userGroupsList.innerHTML = html;
-    } catch {
-        userGroupsList.innerHTML = '<b>Your Groups:</b> Failed to load.';
-    }
+    userGroupsList.innerHTML = '';
 }
 // Fetch and display approval status for a pending group
 async function fetchApprovalStatus(group_id) {
