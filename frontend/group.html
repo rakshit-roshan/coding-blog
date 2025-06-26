@@ -7,53 +7,37 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🔒</text></svg>">
     <meta name="theme-color" content="#f8fafc">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-blue.min.css">
-    <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <style>
-        body { font-family: 'Roboto', 'Inter', Arial, sans-serif; }
-        .mdl-layout__header-row { padding-left: 16px; }
-        .sidebar-link.active, .sidebar-link:hover { background: #e3e8f0; color: #1a237e; }
-        .sidebar-link { transition: background 0.2s, color 0.2s; }
-    </style>
+    <style>body { font-family: 'Roboto', 'Inter', Arial, sans-serif; }</style>
 </head>
 <body class="bg-gray-50 min-h-screen">
     <!-- App Bar/Header -->
-    <header class="mdl-layout__header shadow-sm bg-white border-b border-gray-200">
-        <div class="mdl-layout__header-row flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <span class="material-icons text-indigo-600 text-3xl">lock</span>
-                <span class="text-xl font-bold text-gray-800 tracking-tight">Secure Tunnel</span>
-            </div>
-            <div class="flex items-center gap-4">
-                <span class="text-gray-700 font-medium" id="currentUserDisplay">&nbsp;</span>
-            </div>
+    <header class="w-full bg-white border-b border-gray-200 shadow-sm flex items-center justify-between px-8 py-4">
+        <div class="flex items-center gap-3">
+            <span class="material-icons text-indigo-600 text-3xl">lock</span>
+            <span class="text-xl font-bold text-gray-800 tracking-tight">Secure Tunnel</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="text-gray-700 font-medium" id="currentUserDisplay"></span>
+            <button id="logoutBtn" class="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 font-semibold hover:bg-indigo-50 flex items-center gap-1"><span class="material-icons">logout</span>Logout</button>
         </div>
     </header>
     <div class="flex min-h-screen">
         <!-- Sidebar -->
-        <nav class="w-56 bg-white border-r border-gray-200 flex flex-col py-6 px-2 space-y-2">
-            <a href="#" class="sidebar-link flex items-center gap-3 px-4 py-2 rounded-lg text-gray-700 font-medium">
-                <span class="material-icons">group</span> Groups
-            </a>
-            <a href="#" class="sidebar-link flex items-center gap-3 px-4 py-2 rounded-lg text-gray-700 font-medium">
-                <span class="material-icons">chat</span> Chat
-            </a>
-            <a href="#" class="sidebar-link flex items-center gap-3 px-4 py-2 rounded-lg text-gray-700 font-medium">
-                <span class="material-icons">settings</span> Settings
-            </a>
-        </nav>
+        <aside class="w-64 bg-white border-r border-gray-200 flex flex-col py-8 px-4">
+            <h2 class="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2"><span class="material-icons text-indigo-600">group</span> My Groups</h2>
+            <ul id="groupList" class="mb-8 space-y-2"></ul>
+            <button id="showCreateGroup" class="w-full mb-2 py-2 rounded-lg bg-indigo-600 text-white font-bold shadow hover:bg-indigo-700 transition flex items-center gap-2"><span class="material-icons">add</span>Create Group</button>
+            <button id="showJoinGroup" class="w-full py-2 rounded-lg border-2 border-indigo-600 text-indigo-600 font-bold bg-transparent hover:bg-indigo-600 hover:text-white transition flex items-center gap-2"><span class="material-icons">login</span>Join Group</button>
+        </aside>
         <!-- Main Content -->
-        <main class="flex-1 flex items-center justify-center p-8" id="mainContent">
-            <div class="w-full max-w-lg bg-white rounded-xl shadow-xl p-8 border border-gray-200">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2"><span class="material-icons text-indigo-600">group</span> Group Management</h2>
-                <div class="mb-8">
-                    <button class="w-full py-3 rounded-lg bg-indigo-600 text-white font-bold text-lg shadow hover:bg-indigo-700 transition mb-3" id="createGroupBtn">Create New Group</button>
-                    <button class="w-full py-3 rounded-lg border-2 border-indigo-600 text-indigo-600 font-bold text-lg bg-transparent hover:bg-indigo-600 hover:text-white transition" id="joinGroupBtn">Join Existing Group</button>
-                </div>
-                <form id="createGroupForm" class="space-y-5 mb-6 hidden">
-                    <h3 class="text-lg font-semibold text-gray-700 mb-2">Create Group</h3>
+        <main class="flex-1 flex flex-col items-center justify-start p-12">
+            <div id="mainContentArea" class="w-full max-w-xl">
+                <div id="welcomeSection" class="text-gray-600 text-lg text-center mt-16">Select a group or create/join a new one to get started.</div>
+                <!-- Create Group Form -->
+                <form id="createGroupForm" class="space-y-5 hidden bg-white rounded-xl shadow p-8 border border-gray-200 mt-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2"><span class="material-icons text-indigo-600">add</span>Create Group</h3>
                     <div>
                         <label for="groupName" class="block text-gray-700 font-semibold mb-1">Group Name</label>
                         <input type="text" id="groupName" name="groupName" required class="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition" />
@@ -62,21 +46,25 @@
                         <label for="groupMembers" class="block text-gray-700 font-semibold mb-1">Add Members (comma-separated emails)</label>
                         <input type="text" id="groupMembers" name="groupMembers" placeholder="email1@example.com, email2@example.com" class="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition" />
                     </div>
-                    <button type="submit" class="w-full py-3 rounded-lg bg-indigo-600 text-white font-bold text-lg shadow hover:bg-indigo-700 transition">Create Group</button>
-                    <button type="button" class="w-full py-3 rounded-lg border-2 border-gray-300 text-gray-700 font-bold text-lg bg-transparent hover:bg-gray-100 transition" id="cancelCreateGroup">Cancel</button>
-                    <div id="createGroupMsg" class="mt-2 text-center text-sm text-red-500"></div>
+                    <div id="createGroupMsg" class="text-center text-sm text-red-500"></div>
+                    <div class="flex gap-2">
+                        <button type="submit" class="flex-1 py-3 rounded-lg bg-indigo-600 text-white font-bold text-lg shadow hover:bg-indigo-700 transition">Create</button>
+                        <button type="button" id="cancelCreateGroup" class="flex-1 py-3 rounded-lg border-2 border-gray-300 text-gray-700 font-bold text-lg bg-transparent hover:bg-gray-100 transition">Cancel</button>
+                    </div>
                 </form>
-                <form id="joinGroupForm" class="space-y-5 mb-6 hidden">
-                    <h3 class="text-lg font-semibold text-gray-700 mb-2">Join Group</h3>
+                <!-- Join Group Form -->
+                <form id="joinGroupForm" class="space-y-5 hidden bg-white rounded-xl shadow p-8 border border-gray-200 mt-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2"><span class="material-icons text-indigo-600">login</span>Join Group</h3>
                     <div>
                         <label for="joinGroupId" class="block text-gray-700 font-semibold mb-1">Enter 6-digit Group ID</label>
                         <input type="text" id="joinGroupId" name="joinGroupId" maxlength="6" required class="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition" />
                     </div>
-                    <button type="submit" class="w-full py-3 rounded-lg bg-indigo-600 text-white font-bold text-lg shadow hover:bg-indigo-700 transition">Join Group</button>
-                    <button type="button" class="w-full py-3 rounded-lg border-2 border-gray-300 text-gray-700 font-bold text-lg bg-transparent hover:bg-gray-100 transition" id="cancelJoinGroup">Cancel</button>
-                    <div id="joinGroupMsg" class="mt-2 text-center text-sm text-red-500"></div>
+                    <div id="joinGroupMsg" class="text-center text-sm text-red-500"></div>
+                    <div class="flex gap-2">
+                        <button type="submit" class="flex-1 py-3 rounded-lg bg-indigo-600 text-white font-bold text-lg shadow hover:bg-indigo-700 transition">Join</button>
+                        <button type="button" id="cancelJoinGroup" class="flex-1 py-3 rounded-lg border-2 border-gray-300 text-gray-700 font-bold text-lg bg-transparent hover:bg-gray-100 transition">Cancel</button>
+                    </div>
                 </form>
-                <div id="userGroupsList" class="mt-8"></div>
             </div>
         </main>
     </div>
@@ -89,34 +77,83 @@
     if (!currentUser || !currentUser.id) {
         window.location.href = 'index.html';
     }
+    // Display user name
+    document.getElementById('currentUserDisplay').textContent = currentUser ? currentUser.username : '';
     // --- DOM Elements ---
-    const createGroupBtn = document.getElementById('createGroupBtn');
-    const joinGroupBtn = document.getElementById('joinGroupBtn');
+    const groupList = document.getElementById('groupList');
+    const showCreateGroup = document.getElementById('showCreateGroup');
+    const showJoinGroup = document.getElementById('showJoinGroup');
     const createGroupForm = document.getElementById('createGroupForm');
     const joinGroupForm = document.getElementById('joinGroupForm');
     const cancelCreateGroup = document.getElementById('cancelCreateGroup');
     const cancelJoinGroup = document.getElementById('cancelJoinGroup');
     const createGroupMsg = document.getElementById('createGroupMsg');
     const joinGroupMsg = document.getElementById('joinGroupMsg');
+    const welcomeSection = document.getElementById('welcomeSection');
+    const mainContentArea = document.getElementById('mainContentArea');
+    const logoutBtn = document.getElementById('logoutBtn');
 
-    // Group option buttons
-    if (createGroupBtn) createGroupBtn.onclick = () => {
+    // --- Logout ---
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('selectedGroup');
+            window.location.href = 'index.html';
+        });
+    }
+
+    // --- Sidebar: Fetch and render user's groups ---
+    async function fetchUserGroups() {
+        if (!groupList) return;
+        groupList.innerHTML = '<li class="text-gray-400">Loading...</li>';
+        try {
+            const res = await fetch(`https://coding-blog-kdzv.onrender.com/api/users/${currentUser.id}/groups`);
+            if (!res.ok) throw new Error();
+            const groups = await res.json();
+            if (!groups.length) {
+                groupList.innerHTML = '<li class="text-gray-400">No groups yet</li>';
+                return;
+            }
+            groupList.innerHTML = '';
+            groups.forEach(g => {
+                const li = document.createElement('li');
+                li.className = 'px-4 py-2 rounded-lg text-gray-700 font-medium cursor-pointer hover:bg-indigo-50';
+                li.textContent = g.name + ' (' + g.id + ')';
+                li.onclick = () => {
+                    localStorage.setItem('selectedGroup', JSON.stringify({ group_id: g.id, group_name: g.name }));
+                    window.location.href = 'chat.html';
+                };
+                groupList.appendChild(li);
+            });
+        } catch {
+            groupList.innerHTML = '<li class="text-red-400">Failed to load groups</li>';
+        }
+    }
+    fetchUserGroups();
+
+    // --- Show/Hide Forms ---
+    if (showCreateGroup) showCreateGroup.onclick = () => {
         createGroupForm.style.display = 'block';
         joinGroupForm.style.display = 'none';
+        welcomeSection.style.display = 'none';
         createGroupMsg.textContent = '';
     };
-    if (joinGroupBtn) joinGroupBtn.onclick = () => {
+    if (showJoinGroup) showJoinGroup.onclick = () => {
         joinGroupForm.style.display = 'block';
         createGroupForm.style.display = 'none';
+        welcomeSection.style.display = 'none';
         joinGroupMsg.textContent = '';
     };
     if (cancelCreateGroup) cancelCreateGroup.onclick = () => {
         createGroupForm.style.display = 'none';
+        welcomeSection.style.display = '';
     };
     if (cancelJoinGroup) cancelJoinGroup.onclick = () => {
         joinGroupForm.style.display = 'none';
+        welcomeSection.style.display = '';
     };
-    // Create group
+
+    // --- Create group ---
     if (createGroupForm) {
         createGroupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -133,6 +170,8 @@
                 const data = await res.json();
                 if (res.ok) {
                     createGroupMsg.textContent = data.message || 'Group created! The group ID has been sent to your email.';
+                    createGroupForm.reset();
+                    fetchUserGroups();
                 } else {
                     createGroupMsg.textContent = data.error || 'Failed to create group.';
                 }
@@ -141,7 +180,7 @@
             }
         });
     }
-    // Join group
+    // --- Join group ---
     if (joinGroupForm) {
         joinGroupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -156,153 +195,19 @@
                 const data = await res.json();
                 if (res.ok) {
                     if (data.alreadyMember) {
-                        // Save selected group to localStorage and redirect to chat
                         localStorage.setItem('selectedGroup', JSON.stringify({ group_id: data.group_id, group_name: data.group_name }));
                         window.location.href = 'chat.html';
                         return;
                     }
                     joinGroupMsg.textContent = data.message || 'Join request sent! Waiting for all members to approve.';
+                    joinGroupForm.reset();
+                    fetchUserGroups();
                 } else {
                     joinGroupMsg.textContent = data.error || 'Failed to join group.';
                 }
             } catch {
                 joinGroupMsg.textContent = 'Failed to join group.';
             }
-        });
-    }
-    // --- Loader Logic ---
-    const loader = document.getElementById('globalLoader');
-    const loaderText = document.getElementById('loaderText');
-    const loaderSubtext = document.getElementById('loaderSubtext');
-    const loaderPhrases = [
-        'Establishing secure tunnel...',
-        'Encrypting connection...',
-        'Verifying credentials...',
-        'Entering secure workspace...'
-    ];
-    function showLoader(phraseIdx = 0, subtext = 'Please wait') {
-        if (!loader) return;
-        loader.classList.remove('hidden');
-        loaderText.textContent = loaderPhrases[phraseIdx % loaderPhrases.length];
-        loaderSubtext.textContent = subtext;
-    }
-    function hideLoader() {
-        if (!loader) return;
-        loader.classList.add('hidden');
-    }
-    // Animate loader phrases
-    function animateLoaderPhrases() {
-        let idx = 0;
-        showLoader(idx);
-        const interval = setInterval(() => {
-            idx++;
-            if (idx < loaderPhrases.length) {
-                showLoader(idx);
-            } else {
-                clearInterval(interval);
-                hideLoader();
-            }
-        }, 900);
-    }
-    // Show loader on page load
-    window.addEventListener('DOMContentLoaded', () => {
-        animateLoaderPhrases();
-    });
-    // Show loader on all form submits and button clicks
-    function setButtonLoading(btn, loading) {
-        if (!btn) return;
-        if (loading) btn.classList.add('loading');
-        else btn.classList.remove('loading');
-    }
-    if (createGroupForm) {
-        createGroupForm.addEventListener('submit', (e) => {
-            const btn = createGroupForm.querySelector('button[type="submit"]');
-            setButtonLoading(btn, true);
-            showLoader(0, 'Creating group securely...');
-            setTimeout(() => {
-                hideLoader();
-                setButtonLoading(btn, false);
-            }, 1200);
-        });
-    }
-    if (joinGroupForm) {
-        joinGroupForm.addEventListener('submit', (e) => {
-            const btn = joinGroupForm.querySelector('button[type="submit"]');
-            setButtonLoading(btn, true);
-            showLoader(0, 'Joining group securely...');
-            setTimeout(() => {
-                hideLoader();
-                setButtonLoading(btn, false);
-            }, 1200);
-        });
-    }
-    if (createGroupBtn) {
-        createGroupBtn.addEventListener('click', (e) => {
-            showLoader(0, 'Preparing group creation...');
-            setTimeout(hideLoader, 900);
-        });
-    }
-    if (joinGroupBtn) {
-        joinGroupBtn.addEventListener('click', (e) => {
-            showLoader(0, 'Preparing group join...');
-            setTimeout(hideLoader, 900);
-        });
-    }
-    if (cancelCreateGroup) {
-        cancelCreateGroup.addEventListener('click', (e) => {
-            showLoader(0, 'Cancelling...');
-            setTimeout(hideLoader, 700);
-        });
-    }
-    if (cancelJoinGroup) {
-        cancelJoinGroup.addEventListener('click', (e) => {
-            showLoader(0, 'Cancelling...');
-            setTimeout(hideLoader, 700);
-        });
-    }
-    // Prevent multiple clicks on all buttons
-    Array.from(document.querySelectorAll('button')).forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            if (btn.classList.contains('loading')) e.preventDefault();
-        });
-    });
-    // --- Dark Mode Toggle ---
-    const darkModeToggle = document.getElementById('darkModeToggle');
-    function setDarkMode(enabled) {
-        if (enabled) {
-            document.body.classList.add('dark-mode');
-            localStorage.setItem('darkMode', '1');
-        } else {
-            document.body.classList.remove('dark-mode');
-            localStorage.setItem('darkMode', '0');
-        }
-    }
-    if (darkModeToggle) {
-        darkModeToggle.addEventListener('click', () => {
-            const isDark = document.body.classList.toggle('dark-mode');
-            localStorage.setItem('darkMode', isDark ? '1' : '0');
-        });
-    }
-    // On load, set dark mode from localStorage or system preference
-    window.addEventListener('DOMContentLoaded', () => {
-        const darkPref = localStorage.getItem('darkMode');
-        if (darkPref === '1' || (darkPref === null && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.body.classList.add('dark-mode');
-        }
-    });
-    // --- Animate dark mode icon ---
-    const darkModeIcon = document.getElementById('darkModeIcon');
-    if (darkModeToggle && darkModeIcon) {
-        darkModeToggle.addEventListener('click', () => {
-            darkModeIcon.animate([
-                { transform: 'rotate(0deg) scale(1)' },
-                { transform: 'rotate(20deg) scale(1.2)' },
-                { transform: 'rotate(-20deg) scale(1.2)' },
-                { transform: 'rotate(0deg) scale(1)' }
-            ], {
-                duration: 500,
-                easing: 'ease-in-out'
-            });
         });
     }
     </script>
