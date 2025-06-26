@@ -166,8 +166,23 @@
                         window.location.href = 'chat.html';
                         return;
                     }
+                    // If join request is pending, poll for approval
                     joinGroupMsg.textContent = data.message || 'Join request sent! Waiting for all members to approve.';
                     joinGroupForm.reset();
+                    // Start polling for approval
+                    let pollInterval = setInterval(async () => {
+                        try {
+                            const statusRes = await fetch(`https://coding-blog-kdzv.onrender.com/api/groups/${group_id}/join-status/${currentUser.id}`);
+                            if (!statusRes.ok) return;
+                            const statusData = await statusRes.json();
+                            // If all approvals are done, redirect to chat
+                            if (statusData.approvals && statusData.approvals.length && statusData.approvals.every(a => a.status === 'approved')) {
+                                clearInterval(pollInterval);
+                                localStorage.setItem('selectedGroup', JSON.stringify({ group_id: group_id, group_name: '' }));
+                                window.location.href = 'chat.html';
+                            }
+                        } catch {}
+                    }, 2000);
                 } else {
                     joinGroupMsg.textContent = data.error || 'Failed to join group.';
                 }

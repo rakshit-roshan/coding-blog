@@ -56,7 +56,7 @@ const groupController = {
         const token = uuidv4();
         await groupModel.createApproval(joinReq.id, member.id, token);
         // Get requesting user's info
-        const requester = await userModel.findByUsername(user_id) || await userModel.findByEmail(user_id);
+        const requester = await userModel.findById(user_id);
         const approveUrl = `https://coding-blog-kdzv.onrender.com/api/groups/join/approve/${token}`;
         const denyUrl = `https://coding-blog-kdzv.onrender.com/api/groups/join/deny/${token}`;
         await sendMail({
