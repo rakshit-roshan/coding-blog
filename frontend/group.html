@@ -87,7 +87,7 @@
         currentUser = JSON.parse(localStorage.getItem('currentUser'));
     } catch {}
     if (!currentUser || !currentUser.id) {
-        window.location.href = 'login.html';
+        window.location.href = 'index.html';
     }
     // --- DOM Elements ---
     const createGroupBtn = document.getElementById('createGroupBtn');
