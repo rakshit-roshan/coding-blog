@@ -223,8 +223,8 @@ app.post('/api/groups/join', async (req, res) => {
       const token = uuidv4();
       await pool.query('INSERT INTO group_join_approvals (request_id, approver_id, token) VALUES ($1, $2, $3)', [requestId, member.id, token]);
       // Send email
-      const approveUrl = `https://rakshitroshan.netlify.app/api/groups/join/approve/${token}`;
-      const denyUrl = `https://rakshitroshan.netlify.appL/api/groups/join/deny/${token}`;
+      const approveUrl = `https://coding-blog-kdzv.onrender.com/api/groups/join/approve/${token}`;
+      const denyUrl = `https://coding-blog-kdzv.onrender.com/api/groups/join/deny/${token}`;
       await transporter.sendMail({
         from: process.env.EMAIL_USER,
         to: member.email,
