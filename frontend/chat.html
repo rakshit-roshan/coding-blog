@@ -163,7 +163,11 @@
         icon.addEventListener('click', async (e) => {
           const msgId = icon.getAttribute('data-id');
           if (confirm('Delete this message?')) {
-            await fetch(`https://coding-blog-kdzv.onrender.com/api/messages/${msgId}`, { method: 'DELETE' });
+            await fetch(`https://coding-blog-kdzv.onrender.com/api/messages/${msgId}`, {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ user_id: currentUser.id })
+            });
             fetchMessages();
           }
         });
