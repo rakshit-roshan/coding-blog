@@ -11,6 +11,11 @@
     <style>body { font-family: 'Roboto', 'Inter', Arial, sans-serif; }</style>
 </head>
 <body class="bg-gray-50 min-h-screen flex items-center justify-center">
+    <div id="globalLoader" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white bg-opacity-90 hidden">
+      <span class="material-icons animate-spin text-5xl text-indigo-600 mb-4">autorenew</span>
+      <div id="loaderText" class="text-xl font-bold text-gray-700 mb-2">Loading...</div>
+      <div id="loaderSubtext" class="text-gray-500 text-base"></div>
+    </div>
     <div class="w-full max-w-md bg-white rounded-xl shadow-xl p-8 border border-gray-200">
         <div class="flex flex-col items-center mb-8">
             <span class="text-indigo-600 text-4xl mb-2 material-icons">lock</span>
@@ -38,5 +43,29 @@
         </form>
     </div>
     <script src="script.js"></script>
+    <script>
+    // Loader logic
+    function showLoader(text = 'Loading...', subtext = '') {
+      const loader = document.getElementById('globalLoader');
+      const loaderText = document.getElementById('loaderText');
+      const loaderSubtext = document.getElementById('loaderSubtext');
+      if (loader) loader.classList.remove('hidden');
+      if (loaderText) loaderText.textContent = text;
+      if (loaderSubtext) loaderSubtext.textContent = subtext;
+    }
+    function hideLoader() {
+      const loader = document.getElementById('globalLoader');
+      if (loader) loader.classList.add('hidden');
+    }
+    // Show loader on login/signup
+    if (window.location.pathname.endsWith('index.html') || window.location.pathname === '/' || window.location.pathname === '') {
+      const authForm = document.getElementById('authForm');
+      if (authForm) {
+        authForm.addEventListener('submit', () => {
+          showLoader('Welcome to Secure Tunnel...','Authenticating your credentials');
+        });
+      }
+    }
+    </script>
 </body>
 </html>

@@ -49,6 +49,11 @@
       </div>
     </main>
   </div>
+  <div id="globalLoader" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white bg-opacity-90 hidden">
+    <span class="material-icons animate-spin text-5xl text-indigo-600 mb-4">autorenew</span>
+    <div id="loaderText" class="text-xl font-bold text-gray-700 mb-2">Loading...</div>
+    <div id="loaderSubtext" class="text-gray-500 text-base"></div>
+  </div>
   <script>
     // --- User/session check ---
     let currentUser = null;
@@ -194,6 +199,32 @@
         localStorage.removeItem('currentUser');
         localStorage.removeItem('selectedGroup');
         window.location.href = 'index.html';
+      });
+    }
+
+    // Loader logic
+    function showLoader(text = 'Loading...', subtext = '') {
+      const loader = document.getElementById('globalLoader');
+      const loaderText = document.getElementById('loaderText');
+      const loaderSubtext = document.getElementById('loaderSubtext');
+      if (loader) loader.classList.remove('hidden');
+      if (loaderText) loaderText.textContent = text;
+      if (loaderSubtext) loaderSubtext.textContent = subtext;
+    }
+    function hideLoader() {
+      const loader = document.getElementById('globalLoader');
+      if (loader) loader.classList.add('hidden');
+    }
+    // Show loader on page load
+    showLoader('Entering the tunnel...','Loading your group chat');
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(hideLoader, 1000);
+    });
+    // Show loader when sending a message
+    if (messageForm) {
+      messageForm.addEventListener('submit', () => {
+        showLoader('Sending message...','Delivering your message securely');
+        setTimeout(hideLoader, 600);
       });
     }
   </script>

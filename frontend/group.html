@@ -66,6 +66,11 @@
             </div>
         </main>
     </div>
+    <div id="globalLoader" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white bg-opacity-90 hidden">
+      <span class="material-icons animate-spin text-5xl text-indigo-600 mb-4">autorenew</span>
+      <div id="loaderText" class="text-xl font-bold text-gray-700 mb-2">Loading...</div>
+      <div id="loaderSubtext" class="text-gray-500 text-base"></div>
+    </div>
     <script>
     // --- User session check ---
     let currentUser = null;
@@ -166,23 +171,27 @@
                         window.location.href = 'chat.html';
                         return;
                     }
-                    // If join request is pending, poll for approval
-                    joinGroupMsg.textContent = data.message || 'Join request sent! Waiting for all members to approve.';
+                    joinGroupMsg.textContent = data.message || 'Join request sent! Waiting for approval...';
                     joinGroupForm.reset();
-                    // Start polling for approval
-                    let pollInterval = setInterval(async () => {
+                    // Wait 1 minute, then check approval status once
+                    setTimeout(async () => {
                         try {
                             const statusRes = await fetch(`https://coding-blog-kdzv.onrender.com/api/groups/${group_id}/join-status/${currentUser.id}`);
-                            if (!statusRes.ok) return;
+                            if (!statusRes.ok) {
+                                joinGroupMsg.textContent = 'Could not check approval status.';
+                                return;
+                            }
                             const statusData = await statusRes.json();
-                            // If all approvals are done, redirect to chat
                             if (statusData.approvals && statusData.approvals.length && statusData.approvals.every(a => a.status === 'approved')) {
-                                clearInterval(pollInterval);
                                 localStorage.setItem('selectedGroup', JSON.stringify({ group_id: group_id, group_name: '' }));
                                 window.location.href = 'chat.html';
+                            } else {
+                                joinGroupMsg.textContent = 'Not accepted. Approval not received within 1 minute.';
                             }
-                        } catch {}
-                    }, 2000);
+                        } catch {
+                            joinGroupMsg.textContent = 'Could not check approval status.';
+                        }
+                    }, 60000); // 1 minute
                 } else {
                     joinGroupMsg.textContent = data.error || 'Failed to join group.';
                 }
@@ -191,6 +200,39 @@
             }
         });
     }
+    // Loader logic
+    function showLoader(text = 'Loading...', subtext = '') {
+      const loader = document.getElementById('globalLoader');
+      const loaderText = document.getElementById('loaderText');
+      const loaderSubtext = document.getElementById('loaderSubtext');
+      if (loader) loader.classList.remove('hidden');
+      if (loaderText) loaderText.textContent = text;
+      if (loaderSubtext) loaderSubtext.textContent = subtext;
+    }
+    function hideLoader() {
+      const loader = document.getElementById('globalLoader');
+      if (loader) loader.classList.add('hidden');
+    }
+    // Show loader on group create
+    if (createGroupForm) {
+      createGroupForm.addEventListener('submit', () => {
+        showLoader('Creating group...','Setting up your secure workspace');
+      });
+    }
+    // Show loader on group join
+    if (joinGroupForm) {
+      joinGroupForm.addEventListener('submit', () => {
+        showLoader('Requesting to join group...','Waiting for approval');
+      });
+    }
+    // Show loader when redirecting to chat
+    function redirectToChat() {
+      showLoader('Entering the tunnel...','Connecting you to your group chat');
+      setTimeout(() => {
+        window.location.href = 'chat.html';
+      }, 800);
+    }
+    // Replace all window.location.href = 'chat.html' with redirectToChat();
     </script>
 </body>
 </html> 
