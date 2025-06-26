@@ -34,9 +34,11 @@ const cancelJoinGroup = document.getElementById('cancelJoinGroup');
 const createGroupMsg = document.getElementById('createGroupMsg');
 const joinGroupMsg = document.getElementById('joinGroupMsg');
 const userGroupsList = document.getElementById('userGroupsList');
+const approvalStatusRealtime = document.getElementById('approvalStatusRealtime');
 let selectedGroupId = null;
 
 let isSignUp = false;
+let approvalStatusInterval = null;
 
 // --- Auth Form Toggle ---
 if (toggleAuth) {
@@ -397,15 +399,21 @@ window.selectGroup = async function(group_id, group_name) {
     const groups = await res.json();
     const isMember = Array.isArray(groups) && groups.some(g => g.group_id === group_id);
     if (!isMember) {
-        alert('You are not a member of this group yet. Wait for approval.');
+        showChatSection();
+        document.querySelector('.chat-title').textContent = group_name + ' (' + group_id + ')';
+        if (chatMessages) chatMessages.innerHTML = '';
+        if (messageForm) messageForm.style.display = 'none';
+        showApprovalStatusInChat(group_id);
         return;
     }
     selectedGroupId = group_id;
     showChatSection();
     document.querySelector('.chat-title').textContent = group_name + ' (' + group_id + ')';
+    if (messageForm) messageForm.style.display = '';
+    hideApprovalStatusInChat();
     fetchGroupMessages();
     if (pollingInterval) clearInterval(pollingInterval);
-    pollingInterval = setInterval(fetchGroupMessages, 3000);
+    pollingInterval = setInterval(fetchGroupMessages, 1000); // 1s for real-time
 };
 // Fetch group messages
 async function fetchGroupMessages() {
@@ -432,6 +440,41 @@ if (messageForm) {
             fetchGroupMessages();
         } catch {}
     });
+}
+
+// --- Real-time approval status in group section ---
+async function fetchApprovalStatus(group_id, targetDivId) {
+    if (!currentUser) return;
+    const statusDiv = document.getElementById(targetDivId || `approvalStatus_${group_id}`);
+    if (!statusDiv) return;
+    try {
+        const res = await fetch(`https://coding-blog-kdzv.onrender.com/api/groups/${group_id}/join-status/${currentUser.id}`);
+        const data = await res.json();
+        if (Array.isArray(data.approvals) && data.approvals.length > 0) {
+            statusDiv.innerHTML = data.approvals.map(a => `<span style=\"margin-right:8px;\">${a.username || a.email}: <b style=\"color:${a.status==='approved'?'green':a.status==='denied'?'red':'orange'}\">${a.status}</b></span>`).join('');
+        } else {
+            statusDiv.innerHTML = 'No approval data.';
+        }
+    } catch {
+        statusDiv.innerHTML = 'Failed to load approval status.';
+    }
+}
+
+// --- Real-time approval status in chat window ---
+async function showApprovalStatusInChat(group_id) {
+    if (!approvalStatusRealtime) return;
+    approvalStatusRealtime.style.display = 'block';
+    approvalStatusRealtime.innerHTML = 'Loading approval status...';
+    await fetchApprovalStatus(group_id, 'approvalStatusRealtime');
+    if (approvalStatusInterval) clearInterval(approvalStatusInterval);
+    approvalStatusInterval = setInterval(() => fetchApprovalStatus(group_id, 'approvalStatusRealtime'), 2000);
+}
+function hideApprovalStatusInChat() {
+    if (approvalStatusRealtime) {
+        approvalStatusRealtime.style.display = 'none';
+        approvalStatusRealtime.innerHTML = '';
+    }
+    if (approvalStatusInterval) clearInterval(approvalStatusInterval);
 }
 
 // --- Init ---
