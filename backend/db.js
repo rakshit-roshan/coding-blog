@@ -12,7 +12,9 @@ const createUsersTable = `
     username TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reset_token TEXT,
+    reset_token_expiry TIMESTAMP
   )`;
 
 const createMessagesTable = `
