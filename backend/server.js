@@ -100,7 +100,7 @@ app.post('/api/request-password-reset', async (req, res) => {
         pass: process.env.EMAIL_PASS
       }
     });
-    const resetUrl = `https://YOUR_FRONTEND_URL/reset-password.html?token=${token}`;
+    const resetUrl = `https://rakshitroshan.netlify.app/reset-password.html?token=${token}`;
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
