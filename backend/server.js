@@ -209,7 +209,10 @@ app.post('/api/groups/join', async (req, res) => {
     const groupName = groupRes.rows[0].name;
     // Check if already a member
     const memberRes = await pool.query('SELECT 1 FROM group_members WHERE group_id = $1 AND user_id = $2', [groupDbId, user_id]);
-    if (memberRes.rows.length > 0) return res.status(400).json({ error: 'Already a group member' });
+    if (memberRes.rows.length > 0) {
+      // Return group name for frontend to use
+      return res.status(200).json({ alreadyMember: true, group_id, group_name: groupName });
+    }
     // Create join request
     const joinReqRes = await pool.query('INSERT INTO group_join_requests (group_id, user_id) VALUES ($1, $2) RETURNING id', [groupDbId, user_id]);
     const requestId = joinReqRes.rows[0].id;

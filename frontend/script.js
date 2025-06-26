@@ -334,7 +334,12 @@ if (joinGroupForm) {
             });
             const data = await res.json();
             if (res.ok) {
-                joinGroupMsg.textContent = 'Join request sent! Waiting for all members to approve.';
+                if (data.alreadyMember) {
+                    window.selectGroup(data.group_id, data.group_name);
+                    joinGroupMsg.textContent = '';
+                    return;
+                }
+                joinGroupMsg.textContent = data.message || 'Join request sent! Waiting for all members to approve.';
                 fetchUserGroups();
             } else {
                 joinGroupMsg.textContent = data.error || 'Failed to join group.';
