@@ -26,8 +26,6 @@
     <div class="flex min-h-screen">
         <!-- Sidebar -->
         <aside class="w-64 bg-white border-r border-gray-200 flex flex-col py-8 px-4">
-            <h2 class="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2"><span class="material-icons text-indigo-600">group</span> My Groups</h2>
-            <ul id="groupList" class="mb-8 space-y-2"></ul>
             <button id="showCreateGroup" class="w-full mb-2 py-2 rounded-lg bg-indigo-600 text-white font-bold shadow hover:bg-indigo-700 transition flex items-center gap-2"><span class="material-icons">add</span>Create Group</button>
             <button id="showJoinGroup" class="w-full py-2 rounded-lg border-2 border-indigo-600 text-indigo-600 font-bold bg-transparent hover:bg-indigo-600 hover:text-white transition flex items-center gap-2"><span class="material-icons">login</span>Join Group</button>
         </aside>
@@ -80,7 +78,6 @@
     // Display user name
     document.getElementById('currentUserDisplay').textContent = currentUser ? currentUser.username : '';
     // --- DOM Elements ---
-    const groupList = document.getElementById('groupList');
     const showCreateGroup = document.getElementById('showCreateGroup');
     const showJoinGroup = document.getElementById('showJoinGroup');
     const createGroupForm = document.getElementById('createGroupForm');
@@ -101,35 +98,6 @@
             window.location.href = 'index.html';
         });
     }
-
-    // --- Sidebar: Fetch and render user's groups ---
-    async function fetchUserGroups() {
-        if (!groupList) return;
-        groupList.innerHTML = '<li class="text-gray-400">Loading...</li>';
-        try {
-            const res = await fetch(`https://coding-blog-kdzv.onrender.com/api/users/${currentUser.id}/groups`);
-            if (!res.ok) throw new Error();
-            const groups = await res.json();
-            if (!groups.length) {
-                groupList.innerHTML = '<li class="text-gray-400">No groups yet</li>';
-                return;
-            }
-            groupList.innerHTML = '';
-            groups.forEach(g => {
-                const li = document.createElement('li');
-                li.className = 'px-4 py-2 rounded-lg text-gray-700 font-medium cursor-pointer hover:bg-indigo-50';
-                li.textContent = g.name + ' (' + g.id + ')';
-                li.onclick = () => {
-                    localStorage.setItem('selectedGroup', JSON.stringify({ group_id: g.id, group_name: g.name }));
-                    window.location.href = 'chat.html';
-                };
-                groupList.appendChild(li);
-            });
-        } catch {
-            groupList.innerHTML = '<li class="text-red-400">Failed to load groups</li>';
-        }
-    }
-    fetchUserGroups();
 
     // --- Show/Hide Forms ---
     if (showCreateGroup) showCreateGroup.onclick = () => {
@@ -171,7 +139,6 @@
                 if (res.ok) {
                     createGroupMsg.textContent = data.message || 'Group created! The group ID has been sent to your email.';
                     createGroupForm.reset();
-                    fetchUserGroups();
                 } else {
                     createGroupMsg.textContent = data.error || 'Failed to create group.';
                 }
@@ -201,7 +168,6 @@
                     }
                     joinGroupMsg.textContent = data.message || 'Join request sent! Waiting for all members to approve.';
                     joinGroupForm.reset();
-                    fetchUserGroups();
                 } else {
                     joinGroupMsg.textContent = data.error || 'Failed to join group.';
                 }
