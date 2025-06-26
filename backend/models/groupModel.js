@@ -59,16 +59,17 @@ const groupModel = {
   },
   getJoinRequestStatus: async (groupId, userId) => {
     const reqRes = await pool.query(
-      `SELECT id FROM group_join_requests WHERE group_id = (SELECT id FROM groups WHERE group_id = $1) AND user_id = $2 AND status = 'pending' ORDER BY created_at DESC LIMIT 1`,
+      `SELECT id, status FROM group_join_requests WHERE group_id = (SELECT id FROM groups WHERE group_id = $1) AND user_id = $2 ORDER BY created_at DESC LIMIT 1`,
       [groupId, userId]
     );
     if (reqRes.rows.length === 0) return null;
     const requestId = reqRes.rows[0].id;
+    const joinStatus = reqRes.rows[0].status;
     const approvalsRes = await pool.query(
       `SELECT u.username, u.email, a.status FROM group_join_approvals a JOIN users u ON a.approver_id = u.id WHERE a.request_id = $1`,
       [requestId]
     );
-    return approvalsRes.rows;
+    return { approvals: approvalsRes.rows, joinStatus };
   }
 };
 

@@ -156,8 +156,8 @@ const groupController = {
   getJoinRequestStatus: async (req, res) => {
     const { group_id, user_id } = req.params;
     try {
-      const approvals = await groupModel.getJoinRequestStatus(group_id, user_id);
-      res.json({ approvals: approvals || [] });
+      const status = await groupModel.getJoinRequestStatus(group_id, user_id);
+      res.json(status || { approvals: [], joinStatus: null });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
