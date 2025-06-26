@@ -22,7 +22,7 @@ const groupController = {
         }
       }
       // Email group ID to creator
-      const creator = await userModel.findByEmail((await userModel.findByUsername(created_by))?.email || created_by);
+      const creator = await userModel.findById(created_by);
       const creatorEmail = creator ? creator.email : null;
       if (creatorEmail) {
         await sendMail({

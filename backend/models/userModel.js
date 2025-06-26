@@ -25,6 +25,10 @@ const userModel = {
   findByResetToken: async (token) => {
     const res = await pool.query('SELECT * FROM users WHERE reset_token = $1 AND reset_token_expiry > NOW()', [token]);
     return res.rows[0];
+  },
+  findById: async (id) => {
+    const res = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+    return res.rows[0];
   }
 };
 
