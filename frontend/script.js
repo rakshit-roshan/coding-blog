@@ -62,13 +62,13 @@ if (authForm) {
         try {
             let res;
             if (isSignUp) {
-                res = await fetch('/api/signup', {
+                res = await fetch('https://coding-blog-kdzv.onrender.com/api/signup', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, email, password })
                 });
             } else {
-                res = await fetch('/api/login', {
+                res = await fetch('https://coding-blog-kdzv.onrender.com/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })
@@ -106,7 +106,7 @@ if (resetRequestForm) {
         const email = resetEmailInput.value.trim();
         if (!email) return;
         try {
-            const res = await fetch('/api/request-password-reset', {
+            const res = await fetch('https://coding-blog-kdzv.onrender.com/api/request-password-reset', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email })
