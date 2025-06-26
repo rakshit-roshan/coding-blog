@@ -12,7 +12,7 @@
 </head>
 <body class="bg-gray-50 min-h-screen flex items-center justify-center">
     <div id="globalLoader" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white bg-opacity-90 hidden">
-      <span class="material-icons animate-spin text-5xl text-indigo-600 mb-4">autorenew</span>
+      <span class="material-icons text-5xl text-indigo-600 mb-4">hourglass_empty</span>
       <div id="loaderText" class="text-xl font-bold text-gray-700 mb-2">Loading...</div>
       <div id="loaderSubtext" class="text-gray-500 text-base"></div>
     </div>
@@ -41,6 +41,22 @@
             <button type="submit" class="w-full py-3 rounded-lg bg-indigo-600 text-white font-bold text-lg shadow hover:bg-indigo-700 transition" id="authSubmit">Sign In</button>
             <button type="button" class="w-full py-3 rounded-lg border-2 border-indigo-600 text-indigo-600 font-bold text-lg bg-transparent hover:bg-indigo-600 hover:text-white transition" id="toggleAuth">Don't have an account? <strong>Sign Up</strong></button>
         </form>
+    </div>
+    <div id="resetSection" class="fixed inset-0 z-40 flex items-center justify-center bg-white bg-opacity-95 hidden">
+      <div class="w-full max-w-md bg-white rounded-xl shadow-xl p-8 border border-gray-200">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <span class="material-icons text-indigo-600">lock_reset</span> Reset Password
+        </h2>
+        <form id="resetRequestForm" class="space-y-5">
+          <div>
+            <label for="resetEmail" class="block text-gray-700 font-semibold mb-1">Email</label>
+            <input type="email" id="resetEmail" name="resetEmail" required class="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition" />
+          </div>
+          <button type="submit" class="w-full py-3 rounded-lg bg-indigo-600 text-white font-bold text-lg shadow hover:bg-indigo-700 transition">Send Reset Link</button>
+          <button type="button" id="backToLogin" class="w-full py-3 rounded-lg border-2 border-gray-300 text-gray-700 font-bold text-lg bg-transparent hover:bg-gray-100 transition mt-2">Back to Login</button>
+          <div id="resetRequestMsg" class="mt-2 text-center text-sm text-red-500"></div>
+        </form>
+      </div>
     </div>
     <script src="script.js"></script>
     <script>
