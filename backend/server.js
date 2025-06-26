@@ -181,7 +181,18 @@ app.post('/api/groups', async (req, res) => {
         }
       }
     }
-    res.json({ group_id: groupId });
+    // Email group ID to creator
+    const creatorRes = await pool.query('SELECT email FROM users WHERE id = $1', [created_by]);
+    if (creatorRes.rows.length > 0) {
+      const creatorEmail = creatorRes.rows[0].email;
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: creatorEmail,
+        subject: 'Your Group ID for ChatPro',
+        html: `<p>Your group <b>${name}</b> has been created.<br>Group ID: <b>${groupId}</b><br>Share this ID with others to let them join your group.</p>`
+      });
+    }
+    res.json({ message: 'Group created! The group ID has been sent to your email.' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

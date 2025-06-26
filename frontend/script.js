@@ -310,7 +310,7 @@ if (createGroupForm) {
             });
             const data = await res.json();
             if (res.ok) {
-                createGroupMsg.textContent = 'Group created! Share this Group ID: ' + data.group_id;
+                createGroupMsg.textContent = data.message || 'Group created! The group ID has been sent to your email.';
                 fetchUserGroups();
             } else {
                 createGroupMsg.textContent = data.error || 'Failed to create group.';
