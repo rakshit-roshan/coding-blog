@@ -77,21 +77,33 @@ const groupController = {
     const { token } = req.params;
     try {
       const approval = await groupModel.getJoinRequestByToken(token);
+      console.log('[approveJoinRequest] approval row:', approval);
       if (!approval) return res.status(404).send('Invalid or expired approval link.');
       if (approval.status !== 'pending') return res.send('You have already responded to this request.');
       await groupModel.updateApprovalStatus(token, 'approved');
       // Check if all approvals are done
       const allApprovals = await groupModel.getAllApprovalsForRequest(approval.request_id);
+      console.log('[approveJoinRequest] allApprovals:', allApprovals);
       if (allApprovals.every(a => a.status === 'approved')) {
         // Add user to group
         const joinReq = await groupModel.getJoinRequest(approval.request_id);
+        console.log('[approveJoinRequest] joinReq:', joinReq);
         if (joinReq) {
           await groupModel.addMember(joinReq.group_id, joinReq.user_id);
           await groupModel.updateJoinRequestStatus(approval.request_id, 'approved');
+          const updatedJoinReq = await groupModel.getJoinRequest(approval.request_id);
+          console.log('[approveJoinRequest] updated joinReq after approval:', updatedJoinReq);
+        } else {
+          // Fallback: update join request status directly if joinReq not found
+          await groupModel.updateJoinRequestStatus(approval.request_id, 'approved');
+          const updatedJoinReq = await groupModel.getJoinRequest(approval.request_id);
+          console.error('[approveJoinRequest] joinReq not found for request_id', approval.request_id);
+          console.log('[approveJoinRequest] updated joinReq after fallback:', updatedJoinReq);
         }
       }
       res.send('You have approved the join request.');
     } catch (err) {
+      console.error('[approveJoinRequest] error:', err);
       res.status(500).send('Error processing approval.');
     }
   },

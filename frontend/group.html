@@ -187,16 +187,20 @@
                                 window.location.href = 'chat.html';
                             } else {
                                 joinGroupMsg.textContent = 'Not accepted. Approval not received within 1 minute.';
+                                hideLoader();
                             }
                         } catch {
                             joinGroupMsg.textContent = 'Could not check approval status.';
+                            hideLoader();
                         }
                     }, 60000); // 1 minute
                 } else {
                     joinGroupMsg.textContent = data.error || 'Failed to join group.';
+                    hideLoader();
                 }
             } catch {
                 joinGroupMsg.textContent = 'Failed to join group.';
+                hideLoader();
             }
         });
     }
