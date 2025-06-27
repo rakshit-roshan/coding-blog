@@ -46,6 +46,7 @@ const groupController = {
       const groupDbId = group.id;
       // Check if already a member
       const members = await groupModel.getMembers(groupDbId);
+      console.log('[joinGroup] members:', members);
       if (members.some(m => m.id === user_id)) {
         return res.status(200).json({ alreadyMember: true, group_id, group_name: group.name });
       }
