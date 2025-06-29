@@ -248,420 +248,412 @@
 </div>
 
 <script>
-    // --- Global variables for tracking state ---
-let currentUser = null;
-let selectedGroup = null;
-let groupId = null;
-let groupName = null;
-let messageInterval = null;
-let userInterval = null;
-let lastMessageId = 0; // Track the ID of the last message displayed
-let isScrolledToBottom = true; // Track scroll position
-
-// --- Initial setup and session checks ---
-// (Keep existing session checks for currentUser and selectedGroup)
-try {
-    currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    selectedGroup = JSON.parse(localStorage.getItem('selectedGroup'));
-} catch {}
-
-if (!currentUser || !currentUser.id) {
-    window.location.href = 'index.html';
-}
-document.getElementById('currentUserDisplay').textContent = currentUser ? currentUser.username : '';
-
-if (!selectedGroup || !selectedGroup.group_id) {
-    window.location.href = 'group.html';
-}
-groupId = selectedGroup.group_id;
-groupName = selectedGroup.group_name || 'Group Chat';
-document.getElementById('chatGroupName').textContent = `• ${groupName}`;
-
-// --- DOM Elements Initialization ---
-const chatMessages = document.getElementById('chatMessages');
-const messageForm = document.getElementById('messageForm');
-const messageInput = document.getElementById('messageInput');
-const onlineList = document.getElementById('onlineList');
-const onlineListMobile = document.getElementById('onlineListMobile');
-const onlineCount = document.getElementById('onlineCount');
-const backToGroups = document.getElementById('backToGroups');
-const backToGroupsMobile = document.getElementById('backToGroupsMobile');
-const logoutBtn = document.getElementById('logoutBtn');
-const toggleOnlineUsers = document.getElementById('toggleOnlineUsers');
-const mobileOnlineUsers = document.getElementById('mobileOnlineUsers');
-
-// --- Loader Functions ---
-function showLoader(text = 'Loading...', subtext = '') { /* ... (keep existing loader functions) ... */ }
-function hideLoader() { /* ... (keep existing loader functions) ... */ }
-
-// --- Back to Groups Functionality ---
-function goBackToGroups() {
-    showLoader('Returning to Groups...', 'Loading your groups');
-    stopAutoRefresh();
-    setTimeout(() => {
-        window.location.href = 'group.html';
-    }, 800);
-}
-if (backToGroups) backToGroups.onclick = goBackToGroups;
-if (backToGroupsMobile) backToGroupsMobile.onclick = goBackToGroups;
-
-// --- Logout Functionality ---
-if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('selectedGroup');
-        stopAutoRefresh();
+    // --- User/session check ---
+    let currentUser = null;
+    try {
+        currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    } catch {}
+    if (!currentUser || !currentUser.id) {
         window.location.href = 'index.html';
-    });
-}
+    }
+    document.getElementById('currentUserDisplay').textContent = currentUser ? currentUser.username : '';
 
-// --- Mobile Online Users Toggle ---
-if (toggleOnlineUsers) {
-    toggleOnlineUsers.addEventListener('click', () => {
-        mobileOnlineUsers.classList.toggle('hidden');
-    });
-}
-
-// --- Fetch and Render Messages (Optimized) ---
-async function fetchMessages() {
-    if (!groupId) return;
+    // --- Group selection ---
+    let selectedGroup = null;
     try {
-        // Fetch messages only after the last fetched message ID
-        const res = await fetch(`https://coding-blog-kdzv.onrender.com/api/groups/${groupId}/messages?since_id=${lastMessageId}`);
-        
-        if (!res.ok) {
-            if (res.status === 404) { // API might return 404 if no new messages
-                return; 
-            }
-            throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        
-        const newMessages = await res.json();
-        
-        if (newMessages.length > 0) {
-            appendMessages(newMessages);
-            // Update lastMessageId only if new messages were successfully processed and appended
-            lastMessageId = newMessages[newMessages.length - 1].id;
-        }
-    } catch (error) {
-        console.error('Error fetching messages:', error);
-        if (chatMessages.innerHTML === '') { // Only show error if chat is empty
-             showMessage('Could not load messages. Check connection or try refreshing.', 'error');
-        }
+        selectedGroup = JSON.parse(localStorage.getItem('selectedGroup'));
+    } catch {}
+    if (!selectedGroup || !selectedGroup.group_id) {
+        window.location.href = 'group.html';
     }
-}
+    const groupId = selectedGroup.group_id;
+    const groupName = selectedGroup.group_name || 'Group Chat';
+    document.getElementById('chatGroupName').textContent = `• ${groupName}`;
 
-// --- Append new messages to the chat window ---
-function appendMessages(messages) {
-    if (!chatMessages) return;
+    // --- DOM Elements ---
+    const chatMessages = document.getElementById('chatMessages');
+    const messageForm = document.getElementById('messageForm');
+    const messageInput = document.getElementById('messageInput');
+    const onlineList = document.getElementById('onlineList');
+    const onlineListMobile = document.getElementById('onlineListMobile');
+    const onlineCount = document.getElementById('onlineCount');
+    const backToGroups = document.getElementById('backToGroups');
+    const backToGroupsMobile = document.getElementById('backToGroupsMobile');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const toggleOnlineUsers = document.getElementById('toggleOnlineUsers');
+    const mobileOnlineUsers = document.getElementById('mobileOnlineUsers');
 
-    const currentScrollTop = chatMessages.scrollTop;
-    const isScrolledToBottom = chatMessages.scrollHeight - chatMessages.clientHeight <= chatMessages.scrollTop + 50; // Allow a small buffer
+    // --- Loader functionality ---
+    function showLoader(text = 'Loading...', subtext = '') {
+        const loader = document.getElementById('globalLoader');
+        const loaderText = document.getElementById('loaderText');
+        const loaderSubtext = document.getElementById('loaderSubtext');
+        if (loader) loader.classList.remove('hidden');
+        if (loaderText) loaderText.textContent = text;
+        if (loaderSubtext) loaderSubtext.textContent = subtext;
+    }
 
-    messages.forEach(msg => {
-        const isMe = msg.user_id === currentUser.id;
-        const bubbleColor = isMe ? 'bg-indigo-500 text-white' : `${getUserColor(msg.user_id)} text-gray-800`;
-        const align = isMe ? 'items-end' : 'items-start';
-        const textAlign = isMe ? 'text-right' : 'text-left';
-        const bubbleAlign = isMe ? 'ml-auto' : 'mr-auto';
-        const userLabel = isMe ? 'You' : (msg.username || msg.email || 'User');
-        
-        const bubble = document.createElement('div');
-        bubble.className = `flex flex-col ${align} mb-3 message-bubble`;
-        bubble.innerHTML = `
-            <div class="text-xs text-gray-500 mb-1 ${textAlign} px-1 flex items-center gap-2">
-                <span>${userLabel}</span>
-                <span>•</span>
-                <span>${new Date(msg.created_at).toLocaleTimeString()}</span>
-                ${isMe ? `<button class="delete-msg text-xs text-gray-400 hover:text-red-500 cursor-pointer transition-colors ml-2" data-id="${msg.id}" title="Delete message">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                    </svg>
-                </button>` : ''}
-            </div>
-            <div class="px-4 py-3 rounded-2xl ${bubbleColor} max-w-xs md:max-w-md lg:max-w-lg ${bubbleAlign} shadow-sm border break-words">
-                ${msg.content}
-            </div>
-        `;
-        chatMessages.appendChild(bubble);
-    });
+    function hideLoader() {
+        const loader = document.getElementById('globalLoader');
+        if (loader) loader.classList.add('hidden');
+    }
 
-    // Auto-scroll to bottom if user was already at bottom
-    if (isScrolledToBottom) {
+    // --- Back to Groups functionality ---
+    function goBackToGroups() {
+        showLoader('Returning to Groups...', 'Loading your groups');
         setTimeout(() => {
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }, 100);
+            window.location.href = 'group.html';
+        }, 800);
     }
 
-    // Re-attach delete event listeners for newly added messages
-    chatMessages.querySelectorAll('.delete-msg').forEach(button => {
-        button.addEventListener('click', async (e) => {
-            e.preventDefault();
-            const msgId = button.getAttribute('data-id');
-            if (confirm('Delete this message?')) {
-                try {
-                    await fetch(`https://coding-blog-kdzv.onrender.com/api/messages/${msgId}`, {
-                        method: 'DELETE',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ user_id: currentUser.id })
-                    });
-                    fetchMessages(); // Refresh messages after deletion
-                } catch (error) {
-                    console.error('Error deleting message:', error);
-                    showMessage('Failed to delete message', 'error');
-                }
-            }
+    if (backToGroups) {
+        backToGroups.onclick = goBackToGroups;
+    }
+    if (backToGroupsMobile) {
+        backToGroupsMobile.onclick = goBackToGroups;
+    }
+
+    // --- Logout functionality ---
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('selectedGroup');
+            window.location.href = 'index.html';
         });
-    });
-}
+    }
 
-// --- Send Message ---
-if (messageForm) {
-    messageForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const content = messageInput.value.trim();
-        if (!content || !currentUser || !groupId) return;
+    // --- Mobile online users toggle ---
+    if (toggleOnlineUsers) {
+        toggleOnlineUsers.addEventListener('click', () => {
+            mobileOnlineUsers.classList.toggle('hidden');
+        });
+    }
 
-        messageInput.disabled = true;
-        const submitBtn = messageForm.querySelector('button[type="submit"]');
-        const originalBtnContent = submitBtn.innerHTML;
-        submitBtn.innerHTML = `<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>`;
-        submitBtn.disabled = true;
-
+    // --- Fetch and render messages ---
+    async function fetchMessages() {
+        if (!groupId) return;
         try {
-            const response = await fetch(`https://coding-blog-kdzv.onrender.com/api/groups/${groupId}/messages`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: currentUser.id, content })
-            });
+            const res = await fetch(`https://coding-blog-kdzv.onrender.com/api/groups/${groupId}/messages`);
+            if (!res.ok) throw new Error('Failed to fetch messages');
+            const messages = await res.json();
+            renderMessages(messages);
+        } catch (error) {
+            console.error('Error fetching messages:', error);
+        }
+    }
+
+    // --- User color generator ---
+    function getUserColor(userId) {
+        const colors = [
+            'bg-indigo-100 border-indigo-200', 'bg-green-100 border-green-200', 'bg-yellow-100 border-yellow-200', 
+            'bg-pink-100 border-pink-200', 'bg-blue-100 border-blue-200', 'bg-purple-100 border-purple-200', 
+            'bg-orange-100 border-orange-200', 'bg-teal-100 border-teal-200', 'bg-red-100 border-red-200', 
+            'bg-lime-100 border-lime-200'
+        ];
+        return colors[userId % colors.length];
+    }
+
+    // --- Render messages as chat bubbles ---
+    function renderMessages(messages) {
+        if (!chatMessages) return;
+        
+        const currentScrollTop = chatMessages.scrollTop;
+        const isScrolledToBottom = chatMessages.scrollHeight - chatMessages.clientHeight <= chatMessages.scrollTop + 1;
+        
+        chatMessages.innerHTML = '';
+        
+        messages.forEach(msg => {
+            const isMe = msg.user_id === currentUser.id;
+            const bubbleColor = isMe ? 'bg-indigo-500 text-white' : `${getUserColor(msg.user_id)} text-gray-800`;
+            const align = isMe ? 'items-end' : 'items-start';
+            const textAlign = isMe ? 'text-right' : 'text-left';
+            const bubbleAlign = isMe ? 'ml-auto' : 'mr-auto';
+            const userLabel = isMe ? 'You' : (msg.username || msg.email || 'User');
             
-            if (!response.ok) {
-                throw new Error('Failed to send message');
+            const bubble = document.createElement('div');
+            bubble.className = `flex flex-col ${align} mb-3 message-bubble`;
+            bubble.innerHTML = `
+                <div class="text-xs text-gray-500 mb-1 ${textAlign} px-1 flex items-center gap-2">
+                    <span>${userLabel}</span>
+                    <span>•</span>
+                    <span>${new Date(msg.created_at).toLocaleTimeString()}</span>
+                                            ${isMe ? `<button class="delete-msg text-xs text-gray-400 hover:text-red-500 cursor-pointer transition-colors ml-2" data-id="${msg.id}" title="Delete message">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>` : ''}
+                    </div>
+                    <div class="px-4 py-3 rounded-2xl ${bubbleColor} max-w-xs md:max-w-md lg:max-w-lg ${bubbleAlign} shadow-sm border break-words">
+                        ${msg.content}
+                    </div>
+                `;
+                chatMessages.appendChild(bubble);
+            });
+
+            // Auto-scroll to bottom if user was already at bottom
+            if (isScrolledToBottom) {
+                setTimeout(() => {
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }, 100);
             }
 
-            const sentMessage = await response.json();
-            // Optimistically append the sent message immediately
-            appendMessages([sentMessage]); 
-            // Update lastMessageId with the ID of the message just sent
-            lastMessageId = sentMessage.id; 
-
-            messageInput.value = '';
-        } catch (error) {
-            console.error('Error sending message:', error);
-            showMessage('Failed to send message', 'error');
-        } finally {
-            messageInput.disabled = false;
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalBtnContent;
-            messageInput.focus();
-        }
-    });
-}
-
-// --- Fetch and Render Online Users ---
-async function fetchOnlineUsers() {
-    try {
-        const res = await fetch(`https://coding-blog-kdzv.onrender.com/api/groups/${groupId}/members`);
-        if (!res.ok) throw new Error('Failed to fetch members');
-        const users = await res.json();
-        renderOnlineUsers(users);
-    } catch (error) {
-        console.error('Error fetching online users:', error);
-        // Fallback to showing only the current user if fetch fails
-        renderOnlineUsers([{ 
-            username: currentUser.username, 
-            email: currentUser.email, 
-            is_online: true 
-        }]);
-    }
-}
-
-function renderOnlineUsers(users) {
-    const userCount = users.length || 1;
-    if (onlineCount) onlineCount.textContent = userCount;
-
-    const renderUserList = (container) => {
-        if (!container) return;
-        container.innerHTML = '';
-        
-        if (!users.length) {
-            container.innerHTML = `
-                <li class="flex items-center gap-3 p-2 rounded-lg bg-indigo-50">
-                    <span class="inline-block w-3 h-3 rounded-full bg-green-500 animate-pulse"></span>
-                    <span class="font-medium text-green-700">${currentUser.username}</span>
-                    <span class="text-xs text-indigo-600">(You)</span>
-                </li>
-            `;
-            return;
-        }
-
-        users.forEach(user => {
-                const isCurrentUser = user.email === currentUser.email || user.username === currentUser.username;
-                // Simulate online/offline status if not provided by API
-                const isOnline = user.is_online !== undefined ? user.is_online : (Math.random() > 0.3); 
-                const dotColor = isOnline ? 'bg-green-500' : 'bg-gray-400';
-                const textColor = isOnline ? 'text-gray-700' : 'text-gray-500';
-                const bgColor = isCurrentUser ? 'bg-indigo-50' : (isOnline ? 'bg-green-50' : 'bg-gray-50');
-                
-                container.innerHTML += `
-                    <li class="flex items-center gap-3 p-2 rounded-lg ${bgColor} transition-colors">
-                        <span class="inline-block w-3 h-3 rounded-full ${dotColor} ${isOnline ? 'animate-pulse' : ''}"></span>
-                        <span class="font-medium ${textColor}">${user.username || user.email}</span>
-                        ${isCurrentUser ? '<span class="text-xs text-indigo-600">(You)</span>' : ''}
-                    </li>
-                `;
+            // Add delete event listeners
+            chatMessages.querySelectorAll('.delete-msg').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    const msgId = button.getAttribute('data-id');
+                    if (confirm('Delete this message?')) {
+                        try {
+                            await fetch(`https://coding-blog-kdzv.onrender.com/api/messages/${msgId}`, {
+                                method: 'DELETE',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ user_id: currentUser.id })
+                            });
+                            fetchMessages();
+                        } catch (error) {
+                            console.error('Error deleting message:', error);
+                            showMessage('Failed to delete message', 'error');
+                        }
+                    }
+                });
             });
-        };
-
-        renderUserList(onlineList);
-        renderUserList(onlineListMobile);
-    }
-
-    // --- Auto-refresh functionality ---
-    function startAutoRefresh() {
-        // Fetch messages every 2 seconds
-        messageInterval = setInterval(fetchMessages, 2000);
-        // Fetch users every 10 seconds
-        userInterval = setInterval(fetchOnlineUsers, 10000);
-    }
-
-    function stopAutoRefresh() {
-        if (messageInterval) clearInterval(messageInterval);
-        if (userInterval) clearInterval(userInterval);
-    }
-
-    // --- Utility function for showing toast messages ---
-    function showMessage(message, type) {
-        const toast = document.createElement('div');
-        toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white font-medium transition-all duration-300 ${
-            type === 'success' ? 'bg-green-500' : 
-            type === 'error' ? 'bg-red-500' : 
-            type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
-        }`;
-        toast.textContent = message;
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    }
-
-    // --- Keyboard shortcuts ---
-    document.addEventListener('keydown', (e) => {
-        // Escape to close mobile online users
-        if (e.key === 'Escape' && mobileOnlineUsers && !mobileOnlineUsers.classList.contains('hidden')) {
-            mobileOnlineUsers.classList.add('hidden');
         }
-        
-        // Alt + Enter for new line in message input
-        if (e.altKey && e.key === 'Enter' && document.activeElement === messageInput) {
-            e.preventDefault();
-            const cursorPos = messageInput.selectionStart;
-            const textBefore = messageInput.value.substring(0, cursorPos);
-            const textAfter = messageInput.value.substring(cursorPos);
-            messageInput.value = textBefore + '\n' + textAfter;
-            messageInput.selectionStart = messageInput.selectionEnd = cursorPos + 1;
+
+        // --- Send message ---
+        if (messageForm) {
+            messageForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const content = messageInput.value.trim();
+                if (!content || !currentUser || !groupId) return;
+
+                // Disable form while sending
+                messageInput.disabled = true;
+                const submitBtn = messageForm.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn.innerHTML;
+                submitBtn.innerHTML = `
+                    <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    <span class="hidden sm:inline">Sending...</span>
+                `;
+                submitBtn.disabled = true;
+
+                try {
+                    await fetch(`https://coding-blog-kdzv.onrender.com/api/groups/${groupId}/messages`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: currentUser.id, content })
+                    });
+                    messageInput.value = '';
+                    fetchMessages();
+                } catch (error) {
+                    console.error('Error sending message:', error);
+                    showMessage('Failed to send message', 'error');
+                } finally {
+                    // Re-enable form
+                    messageInput.disabled = false;
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                    messageInput.focus();
+                }
+            });
         }
-        // Ctrl + Enter to send message
-        if (e.ctrlKey && e.key === 'Enter' && document.activeElement === messageInput) {
-            e.preventDefault();
-            messageForm.requestSubmit();
+
+        // --- Fetch and render online/offline users ---
+        async function fetchOnlineUsers() {
+            try {
+                const res = await fetch(`https://coding-blog-kdzv.onrender.com/api/groups/${groupId}/members`);
+                if (!res.ok) throw new Error('Failed to fetch members');
+                const users = await res.json();
+                renderOnlineUsers(users);
+            } catch (error) {
+                console.error('Error fetching online users:', error);
+                // Show current user only as fallback
+                renderOnlineUsers([{ 
+                    username: currentUser.username, 
+                    email: currentUser.email, 
+                    is_online: true 
+                }]);
+            }
         }
-    });
 
-    // --- Page visibility handling ---
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            stopAutoRefresh();
-        } else {
-            startAutoRefresh();
-            fetchMessages(); // Fetch immediately when tab becomes visible
-            fetchOnlineUsers();
+        function renderOnlineUsers(users) {
+            const userCount = users.length || 1;
+            if (onlineCount) onlineCount.textContent = userCount;
+
+            const renderUserList = (container) => {
+                if (!container) return;
+                container.innerHTML = '';
+                
+                if (!users.length) {
+                    container.innerHTML = `
+                        <li class="flex items-center gap-3 p-2 rounded-lg bg-green-50">
+                            <span class="inline-block w-3 h-3 rounded-full bg-green-500 animate-pulse"></span>
+                            <span class="font-medium text-green-700">${currentUser.username}</span>
+                            <span class="text-xs text-green-600">(You)</span>
+                        </li>
+                    `;
+                    return;
+                }
+
+                users.forEach(user => {
+                    const isCurrentUser = user.email === currentUser.email || user.username === currentUser.username;
+                    const isOnline = user.is_online !== undefined ? user.is_online : (Math.random() > 0.3);
+                    const dotColor = isOnline ? 'bg-green-500' : 'bg-gray-400';
+                    const textColor = isOnline ? 'text-gray-700' : 'text-gray-500';
+                    const bgColor = isCurrentUser ? 'bg-indigo-50' : (isOnline ? 'bg-green-50' : 'bg-gray-50');
+                    
+                    container.innerHTML += `
+                        <li class="flex items-center gap-3 p-2 rounded-lg ${bgColor} transition-colors">
+                            <span class="inline-block w-3 h-3 rounded-full ${dotColor} ${isOnline ? 'animate-pulse' : ''}"></span>
+                            <span class="font-medium ${textColor}">${user.username || user.email}</span>
+                            ${isCurrentUser ? '<span class="text-xs text-indigo-600">(You)</span>' : ''}
+                        </li>
+                    `;
+                });
+            };
+
+            renderUserList(onlineList);
+            renderUserList(onlineListMobile);
         }
-    });
 
-    // --- Window focus/blur handling ---
-    window.addEventListener('focus', () => {
-        fetchMessages();
-        fetchOnlineUsers();
-    });
+        // --- Auto-refresh functionality ---
+        let messageInterval;
+        let userInterval;
 
-    // --- Auto-focus message input ---
-    setTimeout(() => {
-        if (messageInput) messageInput.focus();
-    }, 1000);
+        function startAutoRefresh() {
+            // Fetch messages every 2 seconds
+            messageInterval = setInterval(fetchMessages, 2000);
+            // Fetch users every 10 seconds
+            userInterval = setInterval(fetchOnlineUsers, 10000);
+        }
 
-    // --- Initialize chat ---
-    async function initializeChat() {
-        showLoader('Entering the tunnel...', 'Loading your group chat');
-        
-        try {
-            // Fetch initial data concurrently
-            await Promise.all([
-                fetchMessages(),
-                fetchOnlineUsers()
-            ]);
-            
-            startAutoRefresh();
-            hideLoader();
+        function stopAutoRefresh() {
+            if (messageInterval) clearInterval(messageInterval);
+            if (userInterval) clearInterval(userInterval);
+        }
+
+        // --- Utility function for showing toast messages ---
+        function showMessage(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white font-medium transition-all duration-300 ${
+                type === 'success' ? 'bg-green-500' : 
+                type === 'error' ? 'bg-red-500' : 
+                type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
+            }`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
             
             setTimeout(() => {
-                showMessage(`Welcome to ${groupName}!`, 'success');
-            }, 500);
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // --- Keyboard shortcuts ---
+        document.addEventListener('keydown', (e) => {
+            // Escape to close mobile online users
+            if (e.key === 'Escape' && !mobileOnlineUsers.classList.contains('hidden')) {
+                mobileOnlineUsers.classList.add('hidden');
+            }
             
-        } catch (error) {
+            // Alt + Enter for new line in message input
+            if (e.altKey && e.key === 'Enter' && document.activeElement === messageInput) {
+                e.preventDefault();
+                const cursorPos = messageInput.selectionStart;
+                const textBefore = messageInput.value.substring(0, cursorPos);
+                const textAfter = messageInput.value.substring(cursorPos);
+                messageInput.value = textBefore + '\n' + textAfter;
+                messageInput.selectionStart = messageInput.selectionEnd = cursorPos + 1;
+            }
+        });
+
+        // --- Page visibility handling ---
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopAutoRefresh();
+            } else {
+                startAutoRefresh();
+                fetchMessages();
+                fetchOnlineUsers();
+            }
+        });
+
+        // --- Window focus/blur handling ---
+        window.addEventListener('focus', () => {
+            fetchMessages();
+            fetchOnlineUsers();
+        });
+
+        // --- Auto-focus message input ---
+        setTimeout(() => {
+            if (messageInput) messageInput.focus();
+        }, 1000);
+
+        // --- Initialize chat ---
+        async function initializeChat() {
+            showLoader('Entering the tunnel...', 'Loading your group chat');
+            
+            try {
+                await Promise.all([
+                    fetchMessages(),
+                    fetchOnlineUsers()
+                ]);
+                
+                startAutoRefresh();
+                hideLoader();
+                
+                // Show welcome message
+                setTimeout(() => {
+                    showMessage(`Welcome to ${groupName}!`, 'success');
+                }, 500);
+                
+            } catch (error) {
+                hideLoader();
+                showMessage('Failed to load chat. Please refresh the page.', 'error');
+                console.error('Error initializing chat:', error);
+            }
+        }
+
+        // --- Click outside to close mobile online users ---
+        document.addEventListener('click', (e) => {
+            if (!toggleOnlineUsers.contains(e.target) && !mobileOnlineUsers.contains(e.target)) {
+                mobileOnlineUsers.classList.add('hidden');
+            }
+        });
+
+        // --- Enhanced error handling ---
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Unhandled promise rejection:', event.reason);
             hideLoader();
-            showMessage('Failed to load chat. Please refresh the page.', 'error');
-            console.error('Error initializing chat:', error);
+            showMessage('An unexpected error occurred. Please refresh the page.', 'error');
+        });
+
+        window.addEventListener('error', (event) => {
+            console.error('JavaScript error:', event.error);
+            hideLoader();
+        });
+
+        // --- Cleanup on page unload ---
+        window.addEventListener('beforeunload', () => {
+            stopAutoRefresh();
+        });
+
+        // --- Start the chat application ---
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeChat();
+        });
+
+        // --- Service Worker for offline functionality (optional) ---
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.register('/sw.js') // Assuming you have a sw.js file
+              .then(registration => {
+                  console.log('ServiceWorker registered with scope:', registration.scope);
+              })
+          .catch(error => {
+              console.log('ServiceWorker registration failed:', error);
+          });
         }
-    }
-
-    // --- Click outside to close mobile online users ---
-    document.addEventListener('click', (e) => {
-        if (toggleOnlineUsers && mobileOnlineUsers && 
-            !toggleOnlineUsers.contains(e.target) && 
-            !mobileOnlineUsers.contains(e.target)) 
-        {
-            mobileOnlineUsers.classList.add('hidden');
-        }
-    });
-
-    // --- Enhanced error handling ---
-    window.addEventListener('unhandledrejection', (event) => {
-        console.error('Unhandled promise rejection:', event.reason);
-        hideLoader();
-        showMessage('An unexpected error occurred. Please refresh the page.', 'error');
-    });
-
-    window.addEventListener('error', (event) => {
-        console.error('JavaScript error:', event.error);
-        hideLoader();
-    });
-
-    // --- Cleanup on page unload ---
-    window.addEventListener('beforeunload', () => {
-        stopAutoRefresh();
-    });
-
-    // --- Initial Data Fetch ---
-    window.addEventListener('DOMContentLoaded', () => {
-        // Set initial lastMessageId to 0 to fetch all messages on first load
-        lastMessageId = 0; 
-        initializeChat();
-    });
-
-    // --- Service Worker Registration (Optional) ---
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js') // Ensure you have a sw.js file
-            .then(registration => {
-                console.log('ServiceWorker registered with scope:', registration.scope);
-            })
-            .catch(error => {
-                console.log('ServiceWorker registration failed:', error);
-            });
-    }
-
 </script>
 </body>
 </html>
