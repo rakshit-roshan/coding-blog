@@ -343,15 +343,10 @@
 
                 const user = await res.json();
                 // Store user data (in a real app, use secure storage)
-                window.userData = user;
-                
-                // Simulate successful authentication
-                setTimeout(() => {
-                    hideLoader();
-                    showMessage('Welcome to Secure Tunnel!', 'success');
-                    // window.location.href = 'group.html';
-                }, 1500);
-
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                hideLoader();
+                showMessage('Welcome to Secure Tunnel!', 'success');
+                window.location.href = 'group.html';     
             } catch (err) {
                 showMessage('Connection failed. Please try again.', 'error');
                 hideLoader();
