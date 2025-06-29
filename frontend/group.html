@@ -144,11 +144,14 @@
                 if (res.ok) {
                     createGroupMsg.textContent = data.message || 'Group created! The group ID has been sent to your email.';
                     createGroupForm.reset();
+                    hideLoader();
                 } else {
                     createGroupMsg.textContent = data.error || 'Failed to create group.';
+                    hideLoader();
                 }
             } catch {
                 createGroupMsg.textContent = 'Failed to create group.';
+                hideLoader();
             }
         });
     }
