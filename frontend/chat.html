@@ -261,8 +261,8 @@ let isScrolledToBottom = true; // Track scroll position
 // --- Initial setup and session checks ---
 // (Keep existing session checks for currentUser and selectedGroup)
 try {
-    currentUser = JSON.JSON.parse(localStorage.getItem('currentUser'));
-    selectedGroup = JSON.JSON.parse(localStorage.getItem('selectedGroup'));
+    currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    selectedGroup = JSON.parse(localStorage.getItem('selectedGroup'));
 } catch {}
 
 if (!currentUser || !currentUser.id) {
