@@ -4,7 +4,6 @@ const messageModel = require('../models/messageModel');
 const generateGroupId = require('../utils/generateGroupId');
 const { sendMail } = require('../utils/mailer');
 const { v4: uuidv4 } = require('uuid');
-const { onlineUsers } = require('../server');
 
 const groupController = {
   createGroup: async (req, res) => {
@@ -179,6 +178,7 @@ const groupController = {
   getGroupMembers: async (req, res) => {
     const group_id = req.params.group_id;
     try {
+      const { onlineUsers } = require('../server');
       console.log('[getGroupMembers] group_id param:', group_id);
       const group = await groupModel.findByGroupId(group_id);
       console.log('[getGroupMembers] group from DB:', group);
