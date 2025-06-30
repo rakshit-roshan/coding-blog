@@ -527,14 +527,14 @@
 
             users.forEach(user => {
                 const isCurrentUser = user.email === currentUser.email || user.username === currentUser.username;
-                const isOnline = true;
-                const dotColor = 'bg-green-500';
-                const textColor = 'text-gray-700';
-                const bgColor = isCurrentUser ? 'bg-indigo-50' : 'bg-green-50';
+                const isOnline = user.is_online;
+                const dotColor = isOnline ? 'bg-green-500' : 'bg-red-400';
+                const textColor = isOnline ? 'text-gray-700' : 'text-gray-500';
+                const bgColor = isCurrentUser ? 'bg-indigo-50' : (isOnline ? 'bg-green-50' : 'bg-gray-50');
                 
                 container.innerHTML += `
                     <li class="flex items-center gap-3 p-2 rounded-lg ${bgColor} transition-colors">
-                        <span class="inline-block w-3 h-3 rounded-full ${dotColor} animate-pulse"></span>
+                        <span class="inline-block w-3 h-3 rounded-full ${dotColor} ${isOnline ? 'animate-pulse' : ''}"></span>
                         <span class="font-medium ${textColor}">${user.username || user.email}</span>
                         ${isCurrentUser ? '<span class="text-xs text-indigo-600">(You)</span>' : ''}
                     </li>
