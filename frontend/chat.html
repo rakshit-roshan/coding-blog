@@ -557,7 +557,7 @@
                 
                 // Add notification icons for offline users (not current user)
                 const notificationIcons = !isOnline && !isCurrentUser ? `
-                    <button class="ml-2 notify-default text-gray-400 hover:text-indigo-500 transition-colors" data-user-id="${user.id}" data-user-name="${user.username || user.email}" title="Send default notification">
+                    <button class="notify-default text-gray-400 hover:text-indigo-500 transition-colors" data-user-id="${user.id}" data-user-name="${user.username || user.email}" title="Send default notification">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM4.19 4.19A4 4 0 015.61 3H19a4 4 0 014 4v6a4 4 0 01-4 4H5.61a4 4 0 01-1.42-.19"/>
                         </svg>
@@ -572,9 +572,9 @@
                 container.innerHTML += `
                     <li class="flex items-center gap-3 p-2 rounded-lg ${bgColor} transition-colors">
                         <span class="inline-block w-3 h-3 rounded-full ${dotColor} ${isOnline ? 'animate-pulse' : ''}"></span>
-                        <span class="font-medium ${textColor} flex-1">${user.username || user.email}</span>
-                        ${isCurrentUser ? '<span class="text-xs text-indigo-600">(You)</span>' : ''}
-                        <div class="flex gap-1">
+                        <span class="font-medium ${textColor} flex-1 min-w-0">${user.username || user.email}</span>
+                        ${isCurrentUser ? '<span class="text-xs text-indigo-600 flex-shrink-0">(You)</span>' : ''}
+                        <div class="flex gap-2 flex-shrink-0">
                             ${notificationIcons}
                         </div>
                     </li>
