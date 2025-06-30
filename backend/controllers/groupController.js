@@ -174,6 +174,17 @@ const groupController = {
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
+  },
+  getGroupMembers: async (req, res) => {
+    const group_id = req.params.group_id;
+    try {
+      const group = await groupModel.findByGroupId(group_id);
+      if (!group) return res.status(404).json({ error: 'Group not found' });
+      const members = await groupModel.getMembers(group.id);
+      res.json(members);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
   }
 };
 

@@ -11,5 +11,6 @@ router.get('/groups/:group_id/messages', groupController.getGroupMessages);
 router.post('/groups/:group_id/messages', groupController.sendGroupMessage);
 router.get('/groups/pending/:user_id', groupController.getPendingJoinRequests);
 router.get('/groups/:group_id/join-status/:user_id', groupController.getJoinRequestStatus);
+router.get('/groups/:group_id/members', groupController.getGroupMembers);
 
 module.exports = router; 
