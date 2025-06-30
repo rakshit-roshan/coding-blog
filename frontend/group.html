@@ -759,14 +759,17 @@
         });
 
         // --- Handle screen resize ---
+        let lastWindowWidth = window.innerWidth;
         window.addEventListener('resize', () => {
+            if (window.innerWidth === lastWindowWidth) return; // Ignore height-only changes (like keyboard)
+            lastWindowWidth = window.innerWidth;
             // Reset all forms to welcome state on resize to prevent UI conflicts
             const isMobile = window.innerWidth < 768;
             
             if (isMobile) {
                 // Hide desktop forms and show mobile welcome
                 if (createGroupForm) createGroupForm.classList.add('hidden');
-                if (joinGroupForm) joinGroupForm.classList.add('hidden');
+                if (joinGroupForm) createGroupForm.classList.add('hidden');
                 if (welcomeSection) welcomeSection.style.display = 'none';
                 
                 // Reset mobile forms
