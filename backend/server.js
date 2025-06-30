@@ -21,6 +21,7 @@ io.on('connection', (socket) => {
       socket.userId = Number(userId);
       console.log(`[socket.io] User connected: ${userId}`);
       console.log('[socket.io] Online users:', Array.from(onlineUsers));
+      io.emit('online_users_changed');
     }
   });
 
@@ -29,6 +30,7 @@ io.on('connection', (socket) => {
       onlineUsers.delete(socket.userId);
       console.log(`[socket.io] User disconnected: ${socket.userId}`);
       console.log('[socket.io] Online users:', Array.from(onlineUsers));
+      io.emit('online_users_changed');
     }
   });
 });

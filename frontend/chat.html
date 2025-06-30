@@ -317,6 +317,7 @@
     // --- Logout functionality ---
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
+            if (window.socket) window.socket.disconnect();
             localStorage.removeItem('currentUser');
             localStorage.removeItem('selectedGroup');
             window.location.href = 'index.html';
@@ -664,6 +665,7 @@
 
     // --- Cleanup on page unload ---
     window.addEventListener('beforeunload', () => {
+        if (window.socket) window.socket.disconnect();
         stopAutoRefresh();
     });
 
@@ -684,11 +686,16 @@
     }
 
     // --- Socket.io: Connect and emit user_connected ---
-    const socket = io('https://coding-blog-kdzv.onrender.com'); // Use your backend URL
+    window.socket = io('https://coding-blog-kdzv.onrender.com'); // Use your backend URL
     if (currentUser && currentUser.id) {
         console.log('Emitting user_connected with ID:', currentUser.id);
-        socket.emit('user_connected', currentUser.id);
+        window.socket.emit('user_connected', currentUser.id);
     }
+
+    // --- Listen for 'online_users_changed' event ---
+    window.socket.on('online_users_changed', () => {
+        fetchOnlineUsers();
+    });
 </script>
 </body>
 </html>
