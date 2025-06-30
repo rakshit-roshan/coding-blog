@@ -558,12 +558,12 @@
                 // Add notification icons for offline users (not current user)
                 const notificationIcons = !isOnline && !isCurrentUser ? `
                     <button class="notify-default text-gray-400 hover:text-indigo-500 transition-colors" data-user-id="${user.id}" data-user-name="${user.username || user.email}" title="Send default notification">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM4.19 4.19A4 4 0 015.61 3H19a4 4 0 014 4v6a4 4 0 01-4 4H5.61a4 4 0 01-1.42-.19"/>
                         </svg>
                     </button>
                     <button class="notify-custom text-gray-400 hover:text-indigo-500 transition-colors" data-user-id="${user.id}" data-user-name="${user.username || user.email}" title="Send custom message">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                         </svg>
                     </button>
