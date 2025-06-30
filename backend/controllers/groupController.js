@@ -179,9 +179,12 @@ const groupController = {
   getGroupMembers: async (req, res) => {
     const group_id = req.params.group_id;
     try {
+      console.log('[getGroupMembers] group_id param:', group_id);
       const group = await groupModel.findByGroupId(group_id);
+      console.log('[getGroupMembers] group from DB:', group);
       if (!group) return res.status(404).json({ error: 'Group not found' });
       const members = await groupModel.getMembers(group.id);
+      console.log('[getGroupMembers] members from DB:', members);
       // Add is_online property
       const membersWithStatus = members.map(m => ({
         ...m,
@@ -189,6 +192,7 @@ const groupController = {
       }));
       res.json(membersWithStatus);
     } catch (err) {
+      console.error('[getGroupMembers] error:', err);
       res.status(500).json({ error: err.message });
     }
   }

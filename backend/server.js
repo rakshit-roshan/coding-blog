@@ -19,12 +19,16 @@ io.on('connection', (socket) => {
     if (userId) {
       onlineUsers.add(Number(userId));
       socket.userId = Number(userId);
+      console.log(`[socket.io] User connected: ${userId}`);
+      console.log('[socket.io] Online users:', Array.from(onlineUsers));
     }
   });
 
   socket.on('disconnect', () => {
     if (socket.userId) {
       onlineUsers.delete(socket.userId);
+      console.log(`[socket.io] User disconnected: ${socket.userId}`);
+      console.log('[socket.io] Online users:', Array.from(onlineUsers));
     }
   });
 });

@@ -686,6 +686,7 @@
     // --- Socket.io: Connect and emit user_connected ---
     const socket = io('https://coding-blog-kdzv.onrender.com'); // Use your backend URL
     if (currentUser && currentUser.id) {
+        console.log('Emitting user_connected with ID:', currentUser.id);
         socket.emit('user_connected', currentUser.id);
     }
 </script>
