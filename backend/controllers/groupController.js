@@ -4,6 +4,7 @@ const messageModel = require('../models/messageModel');
 const generateGroupId = require('../utils/generateGroupId');
 const { sendMail } = require('../utils/mailer');
 const { v4: uuidv4 } = require('uuid');
+const { onlineUsers } = require('../server');
 
 const groupController = {
   createGroup: async (req, res) => {
@@ -181,7 +182,12 @@ const groupController = {
       const group = await groupModel.findByGroupId(group_id);
       if (!group) return res.status(404).json({ error: 'Group not found' });
       const members = await groupModel.getMembers(group.id);
-      res.json(members);
+      // Add is_online property
+      const membersWithStatus = members.map(m => ({
+        ...m,
+        is_online: onlineUsers.has(m.id)
+      }));
+      res.json(membersWithStatus);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
