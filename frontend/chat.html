@@ -526,7 +526,7 @@
             users.forEach(user => {
                 const isCurrentUser = user.email === currentUser.email || user.username === currentUser.username;
                 const isOnline = user.is_online !== undefined ? user.is_online : (Math.random() > 0.3);
-                const dotColor = isOnline ? 'bg-green-500' : 'bg-gray-400';
+                const dotColor = isOnline ? 'bg-green-500' : 'bg-red-400';
                 const textColor = isOnline ? 'text-gray-700' : 'text-gray-500';
                 const bgColor = isCurrentUser ? 'bg-indigo-50' : (isOnline ? 'bg-green-50' : 'bg-gray-50');
                 
@@ -552,7 +552,7 @@
         // Fetch messages every 2 seconds
         messageInterval = setInterval(fetchMessages, 2000);
         // Fetch users every 10 seconds
-        userInterval = setInterval(fetchOnlineUsers, 10000);
+        userInterval = setInterval(fetchOnlineUsers, 5000);
     }
 
     function stopAutoRefresh() {
