@@ -12,5 +12,7 @@ router.post('/groups/:group_id/messages', groupController.sendGroupMessage);
 router.get('/groups/pending/:user_id', groupController.getPendingJoinRequests);
 router.get('/groups/:group_id/join-status/:user_id', groupController.getJoinRequestStatus);
 router.get('/groups/:group_id/members', groupController.getGroupMembers);
+router.post('/groups/:group_id/notify-user', groupController.notifyUser);
+router.post('/groups/:group_id/notify-user-custom', groupController.notifyUserCustom);
 
 module.exports = router; 

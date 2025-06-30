@@ -195,6 +195,94 @@ const groupController = {
       console.error('[getGroupMembers] error:', err);
       res.status(500).json({ error: err.message });
     }
+  },
+  notifyUser: async (req, res) => {
+    const { group_id } = req.params;
+    const { user_id, target_user_id } = req.body;
+    
+    try {
+      const { onlineUsers } = require('../server');
+      const group = await groupModel.findByGroupId(group_id);
+      if (!group) return res.status(404).json({ error: 'Group not found' });
+      
+      // Check if sender is a group member
+      const members = await groupModel.getMembers(group.id);
+      if (!members.some(m => m.id === user_id)) {
+        return res.status(403).json({ error: 'Not a group member' });
+      }
+      
+      // Get target user details
+      const targetUser = await userModel.findById(target_user_id);
+      if (!targetUser) return res.status(404).json({ error: 'Target user not found' });
+      
+      // Get sender details
+      const sender = await userModel.findById(user_id);
+      
+      // Send default notification email
+      await sendMail({
+        from: process.env.EMAIL_USER,
+        to: targetUser.email,
+        subject: `${sender?.username || 'Someone'} wants you to join their group`,
+        html: `
+          <p>Hello ${targetUser.username || targetUser.email},</p>
+          <p><b>${sender?.username || 'Someone'}</b> wants you to join their group <b>${group.name}</b>.</p>
+          <p>Group ID: <b>${group_id}</b></p>
+          <p>To join this group, please visit the app and use the group ID above.</p>
+          <p>Best regards,<br>Secure Tunnel Team</p>
+        `
+      });
+      
+      res.json({ message: 'Notification sent successfully' });
+    } catch (err) {
+      console.error('[notifyUser] error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  },
+  notifyUserCustom: async (req, res) => {
+    const { group_id } = req.params;
+    const { user_id, target_user_id, custom_message } = req.body;
+    
+    try {
+      const { onlineUsers } = require('../server');
+      const group = await groupModel.findByGroupId(group_id);
+      if (!group) return res.status(404).json({ error: 'Group not found' });
+      
+      // Check if sender is a group member
+      const members = await groupModel.getMembers(group.id);
+      if (!members.some(m => m.id === user_id)) {
+        return res.status(403).json({ error: 'Not a group member' });
+      }
+      
+      // Get target user details
+      const targetUser = await userModel.findById(target_user_id);
+      if (!targetUser) return res.status(404).json({ error: 'Target user not found' });
+      
+      // Get sender details
+      const sender = await userModel.findById(user_id);
+      
+      // Send custom notification email
+      await sendMail({
+        from: process.env.EMAIL_USER,
+        to: targetUser.email,
+        subject: `${sender?.username || 'Someone'} sent you a message about joining their group`,
+        html: `
+          <p>Hello ${targetUser.username || targetUser.email},</p>
+          <p><b>${sender?.username || 'Someone'}</b> sent you this message:</p>
+          <div style="background: #f5f5f5; padding: 15px; border-left: 4px solid #6366f1; margin: 15px 0;">
+            <p><em>"${custom_message}"</em></p>
+          </div>
+          <p>They want you to join their group <b>${group.name}</b>.</p>
+          <p>Group ID: <b>${group_id}</b></p>
+          <p>To join this group, please visit the app and use the group ID above.</p>
+          <p>Best regards,<br>Secure Tunnel Team</p>
+        `
+      });
+      
+      res.json({ message: 'Custom notification sent successfully' });
+    } catch (err) {
+      console.error('[notifyUserCustom] error:', err);
+      res.status(500).json({ error: err.message });
+    }
   }
 };
 
