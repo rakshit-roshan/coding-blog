@@ -14,5 +14,6 @@ router.get('/groups/:group_id/join-status/:user_id', groupController.getJoinRequ
 router.get('/groups/:group_id/members', groupController.getGroupMembers);
 router.post('/groups/:group_id/notify-user', groupController.notifyUser);
 router.post('/groups/:group_id/notify-user-custom', groupController.notifyUserCustom);
+router.get('/groups/:group_id', groupController.getGroup);
 
 module.exports = router; 

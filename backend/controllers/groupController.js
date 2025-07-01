@@ -196,6 +196,19 @@ const groupController = {
       res.status(500).json({ error: err.message });
     }
   },
+  getGroup: async (req, res) => {
+    const group_id = req.params.group_id;
+    try {
+      console.log('[getGroup] group_id param:', group_id);
+      const group = await groupModel.findByGroupId(group_id);
+      console.log('[getGroup] group from DB:', group);
+      if (!group) return res.status(404).json({ error: 'Group not found' });
+      res.json(group);
+    } catch (err) {
+      console.error('[getGroup] error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  },
   notifyUser: async (req, res) => {
     const { group_id } = req.params;
     const { user_id, target_user_id } = req.body;
