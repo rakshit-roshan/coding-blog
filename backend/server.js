@@ -40,13 +40,15 @@ io.on('connection', (socket) => {
 
   // Real-time messaging
   socket.on('send_message', async (data) => {
-    console.log('[socket.io] send_message received:', data); // Debug log
+    const startTime = Date.now();
+    console.log('[socket.io] send_message received at:', startTime, 'data:', data); // Debug log
     // data: { userId, content, groupId (optional) }
     const { userId, content, groupId } = data;
     if (!userId || !content) return;
     try {
       let msg;
       if (groupId) {
+        console.log('[socket.io] Looking up group at:', Date.now(), 'Time elapsed:', Date.now() - startTime, 'ms'); // Debug log
         // Look up the group by public group_id to get the database ID
         const group = await groupModel.findByGroupId(groupId);
         if (!group) {
@@ -54,10 +56,14 @@ io.on('connection', (socket) => {
           return;
         }
         const groupDbId = group.id;
-        console.log('[socket.io] Found group DB ID:', groupDbId, 'for public group ID:', groupId);
+        console.log('[socket.io] Found group DB ID:', groupDbId, 'for public group ID:', groupId, 'at:', Date.now(), 'Time elapsed:', Date.now() - startTime, 'ms');
         
+        console.log('[socket.io] Creating message in database at:', Date.now(), 'Time elapsed:', Date.now() - startTime, 'ms'); // Debug log
         msg = await messageModel.createForGroup(userId, groupDbId, content);
+        console.log('[socket.io] Message created in database at:', Date.now(), 'Time elapsed:', Date.now() - startTime, 'ms'); // Debug log
+        
         // Optionally, use socket.io rooms for group chat
+        console.log('[socket.io] Emitting new_message to room at:', Date.now(), 'Time elapsed:', Date.now() - startTime, 'ms'); // Debug log
         io.to(`group_${groupDbId}`).emit('new_message', {
           userId,
           content,
@@ -65,6 +71,7 @@ io.on('connection', (socket) => {
           id: msg.id,
           created_at: msg.created_at
         });
+        console.log('[socket.io] new_message emitted successfully at:', Date.now(), 'Total time elapsed:', Date.now() - startTime, 'ms'); // Debug log
       } else {
         msg = await messageModel.create(userId, content);
         io.emit('new_message', {

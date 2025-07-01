@@ -430,87 +430,6 @@
     }
     fetchOnlineUsers(); // Initial load only
 
-    // --- Listen for new messages in real-time ---
-    socket.on('new_message', (msg) => {
-        console.log('Received new_message event:', msg); // Debug log
-        if (msg.groupId && Number(msg.groupId) !== Number(groupDbId)) return;
-        fetchMessages();
-    });
-
-    // --- Listen for online users change in real-time ---
-    socket.on('online_users_changed', () => {
-        fetchOnlineUsers();
-    });
-
-    // --- Send message using socket.io ---
-    if (messageForm) {
-        messageForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            console.log('Form submitted'); // Debug log
-            
-            const content = messageInput.value.trim();
-            console.log('Message content:', content); // Debug log
-            console.log('Current user:', currentUser); // Debug log
-            console.log('Group DB ID:', groupDbId); // Debug log
-            
-            if (!content || !currentUser || !groupDbId) {
-                console.log('Validation failed - content:', !!content, 'user:', !!currentUser, 'groupDbId:', !!groupDbId); // Debug log
-                return;
-            }
-            
-            console.log('About to emit send_message with:', { userId: currentUser.id, content, groupId: groupDbId }); // Debug log
-            
-            // Check if socket is connected
-            console.log('Socket connected:', socket.connected); // Debug log
-            if (!socket.connected) {
-                console.error('Socket is not connected!');
-                showMessage('Not connected to server. Please refresh the page.', 'error');
-                return;
-            }
-            
-            messageInput.disabled = true;
-            const submitBtn = messageForm.querySelector('button[type="submit"]');
-            const originalBtnText = submitBtn.innerHTML;
-            submitBtn.innerHTML = `
-                <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                </svg>
-                <span class="hidden sm:inline">Sending...</span>
-            `;
-            submitBtn.disabled = true;
-            
-            try {
-                console.log('Emitting send_message event...'); // Debug log
-                socket.emit('send_message', {
-                    userId: currentUser.id,
-                    content,
-                    groupId: groupDbId // Use DB ID
-                });
-                console.log('send_message event emitted successfully'); // Debug log
-                messageInput.value = '';
-            } catch (error) {
-                console.error('Error sending message:', error);
-                showMessage('Failed to send message', 'error');
-            } finally {
-                messageInput.disabled = false;
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnText;
-                messageInput.focus();
-            }
-        });
-    }
-
-    // --- User color generator ---
-    function getUserColor(userId) {
-        const colors = [
-            'bg-indigo-100 border-indigo-200', 'bg-green-100 border-green-200', 'bg-yellow-100 border-yellow-200', 
-            'bg-pink-100 border-pink-200', 'bg-blue-100 border-blue-200', 'bg-purple-100 border-purple-200', 
-            'bg-orange-100 border-orange-200', 'bg-teal-100 border-teal-200', 'bg-red-100 border-red-200', 
-            'bg-lime-100 border-lime-200'
-        ];
-        return colors[userId % colors.length];
-    }
-
     // --- Render messages as chat bubbles ---
     let lastRenderedMessages = [];
     function renderMessages(messages) {
@@ -599,6 +518,154 @@
         });
 
         lastRenderedMessages = messages.slice();
+    }
+
+    // --- Add single message to UI (optimized for real-time) ---
+    function addMessageToUI(msg) {
+        if (!chatMessages) return;
+        
+        const isMe = msg.user_id === currentUser.id;
+        const bubbleColor = isMe ? 'bg-indigo-500 text-white' : `${getUserColor(msg.user_id)} text-gray-800`;
+        const align = isMe ? 'items-end' : 'items-start';
+        const textAlign = isMe ? 'text-right' : 'text-left';
+        const bubbleAlign = isMe ? 'ml-auto' : 'mr-auto';
+        const userLabel = isMe ? 'You' : (msg.username || msg.email || 'User');
+
+        const bubble = document.createElement('div');
+        bubble.className = `flex flex-col ${align} mb-3 message-bubble`;
+        bubble.setAttribute('data-msg-id', msg.id);
+        bubble.innerHTML = `
+            <div class="text-xs text-gray-500 mb-1 ${textAlign} px-1 flex items-center gap-2">
+                <span>${userLabel}</span>
+                <span>•</span>
+                <span>${new Date(msg.created_at).toLocaleTimeString()}</span>
+                ${isMe ? `<button class="delete-msg text-xs text-gray-400 hover:text-red-500 cursor-pointer transition-colors ml-2" data-id="${msg.id}" title="Delete message">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16a2 2 0 002-2V5a2 2 0 00-2-2H4a2 2 0 00-2 2v2a2 2 0 002 2z"/>
+                    </svg>
+                </button>` : ''}
+            </div>
+            <div class="px-4 py-3 rounded-2xl ${bubbleColor} max-w-xs md:max-w-md lg:max-w-lg ${bubbleAlign} shadow-sm border break-words">
+                ${msg.content}
+            </div>
+        `;
+        
+        chatMessages.appendChild(bubble);
+        
+        // Scroll to bottom immediately
+        chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+        
+        // Add delete event listener
+        const deleteBtn = bubble.querySelector('.delete-msg');
+        if (deleteBtn) {
+            deleteBtn.onclick = async (e) => {
+                e.preventDefault();
+                const msgId = deleteBtn.getAttribute('data-id');
+                if (confirm('Delete this message?')) {
+                    try {
+                        await fetch(`https://coding-blog-kdzv.onrender.com/api/messages/${msgId}`, {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ user_id: currentUser.id })
+                        });
+                        fetchMessages();
+                    } catch (error) {
+                        console.error('Error deleting message:', error);
+                        showMessage('Failed to delete message', 'error');
+                    }
+                }
+            };
+        }
+        
+        // Update lastRenderedMessages
+        lastRenderedMessages.push(msg);
+    }
+
+    // --- Listen for new messages in real-time (optimized) ---
+    socket.on('new_message', (msg) => {
+        const receiveTime = Date.now();
+        console.log('Received new_message event at:', receiveTime, 'Message:', msg); // Debug log
+        if (msg.groupId && Number(msg.groupId) !== Number(groupDbId)) return;
+        
+        console.log('Adding message to UI at:', Date.now()); // Debug log
+        // Add message directly to UI instead of fetching all messages
+        addMessageToUI(msg);
+        console.log('Message added to UI at:', Date.now()); // Debug log
+    });
+
+    // --- Listen for online users change in real-time ---
+    socket.on('online_users_changed', () => {
+        fetchOnlineUsers();
+    });
+
+    // --- Send message using socket.io ---
+    if (messageForm) {
+        messageForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const startTime = Date.now();
+            console.log('Form submitted at:', startTime); // Debug log
+            
+            const content = messageInput.value.trim();
+            console.log('Message content:', content); // Debug log
+            console.log('Current user:', currentUser); // Debug log
+            console.log('Group DB ID:', groupDbId); // Debug log
+            
+            if (!content || !currentUser || !groupDbId) {
+                console.log('Validation failed - content:', !!content, 'user:', !!currentUser, 'groupDbId:', !!groupDbId); // Debug log
+                return;
+            }
+            
+            console.log('About to emit send_message with:', { userId: currentUser.id, content, groupId: groupDbId }); // Debug log
+            
+            // Check if socket is connected
+            console.log('Socket connected:', socket.connected); // Debug log
+            if (!socket.connected) {
+                console.error('Socket is not connected!');
+                showMessage('Not connected to server. Please refresh the page.', 'error');
+                return;
+            }
+            
+            messageInput.disabled = true;
+            const submitBtn = messageForm.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.innerHTML = `
+                <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                <span class="hidden sm:inline">Sending...</span>
+            `;
+            submitBtn.disabled = true;
+            
+            try {
+                console.log('Emitting send_message event at:', Date.now(), 'Time elapsed:', Date.now() - startTime, 'ms'); // Debug log
+                socket.emit('send_message', {
+                    userId: currentUser.id,
+                    content,
+                    groupId: groupDbId // Use DB ID
+                });
+                console.log('send_message event emitted successfully at:', Date.now(), 'Time elapsed:', Date.now() - startTime, 'ms'); // Debug log
+                messageInput.value = '';
+            } catch (error) {
+                console.error('Error sending message:', error);
+                showMessage('Failed to send message', 'error');
+            } finally {
+                messageInput.disabled = false;
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+                messageInput.focus();
+            }
+        });
+    }
+
+    // --- User color generator ---
+    function getUserColor(userId) {
+        const colors = [
+            'bg-indigo-100 border-indigo-200', 'bg-green-100 border-green-200', 'bg-yellow-100 border-yellow-200', 
+            'bg-pink-100 border-pink-200', 'bg-blue-100 border-blue-200', 'bg-purple-100 border-purple-200', 
+            'bg-orange-100 border-orange-200', 'bg-teal-100 border-teal-200', 'bg-red-100 border-red-200', 
+            'bg-lime-100 border-lime-200'
+        ];
+        return colors[userId % colors.length];
     }
 
     // --- Fetch and render online/offline users ---
