@@ -399,6 +399,7 @@
 
     // --- Listen for new messages in real-time ---
     socket.on('new_message', (msg) => {
+        console.log('Received new_message event:', msg); // Debug log
         if (msg.groupId && msg.groupId != groupId) return;
         fetchMessages();
     });

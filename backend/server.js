@@ -37,6 +37,7 @@ io.on('connection', (socket) => {
 
   // Real-time messaging
   socket.on('send_message', async (data) => {
+    console.log('[socket.io] send_message received:', data); // Debug log
     // data: { userId, content, groupId (optional) }
     const { userId, content, groupId } = data;
     if (!userId || !content) return;
