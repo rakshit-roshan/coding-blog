@@ -6,8 +6,10 @@ const messageModel = require('./models/messageModel');
 const server = http.createServer(app);
 const io = socketio(server, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
+    origin: ["https://rakshitroshan.netlify.app", "http://localhost:3000", "http://localhost:5000"],
+    methods: ['GET', 'POST'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
   }
 });
 
