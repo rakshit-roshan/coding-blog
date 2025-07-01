@@ -310,6 +310,20 @@
     const toggleOnlineUsers = document.getElementById('toggleOnlineUsers');
     const mobileOnlineUsers = document.getElementById('mobileOnlineUsers');
 
+    let groupDbId = null;
+
+    async function fetchGroupDbId() {
+        if (!groupId) return;
+        try {
+            const res = await fetch(`https://coding-blog-kdzv.onrender.com/api/groups/${groupId}`);
+            if (!res.ok) throw new Error('Failed to fetch group info');
+            const group = await res.json();
+            groupDbId = group.id; // This is the DB ID
+        } catch (error) {
+            console.error('Error fetching group DB ID:', error);
+        }
+    }
+
     // --- Loader functionality ---
     function showLoader(text = 'Loading...', subtext = '') {
         const loader = document.getElementById('globalLoader');
@@ -361,13 +375,28 @@
     const socket = io('https://coding-blog-kdzv.onrender.com');
     window.socket = socket;
 
-    socket.on('connect', () => {
-        socket.emit('user_connected', currentUser.id);
-        socket.emit('join_group', groupId);
-    });
-    window.addEventListener('beforeunload', () => {
-        socket.emit('leave_group', groupId);
-    });
+    async function initializeChat() {
+        showLoader('Entering the tunnel...', 'Loading your group chat');
+        try {
+            await fetchGroupDbId(); // Fetch DB ID first
+            await Promise.all([
+                fetchMessages(),
+                fetchOnlineUsers()
+            ]);
+            socket.emit('user_connected', currentUser.id);
+            if (groupDbId) {
+                socket.emit('join_group', groupDbId);
+            }
+            hideLoader();
+            setTimeout(() => {
+                showMessage(`Welcome to ${groupName}!`, 'success');
+            }, 500);
+        } catch (error) {
+            hideLoader();
+            showMessage('Failed to load chat. Please refresh the page.', 'error');
+            console.error('Error initializing chat:', error);
+        }
+    }
 
     // --- Fetch and render messages (initial load only) ---
     async function fetchMessages() {
@@ -400,7 +429,7 @@
     // --- Listen for new messages in real-time ---
     socket.on('new_message', (msg) => {
         console.log('Received new_message event:', msg); // Debug log
-        if (msg.groupId && msg.groupId != groupId) return;
+        if (msg.groupId && msg.groupId != groupDbId) return;
         fetchMessages();
     });
 
@@ -414,7 +443,7 @@
         messageForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const content = messageInput.value.trim();
-            if (!content || !currentUser || !groupId) return;
+            if (!content || !currentUser || !groupDbId) return;
             messageInput.disabled = true;
             const submitBtn = messageForm.querySelector('button[type="submit"]');
             const originalBtnText = submitBtn.innerHTML;
@@ -429,7 +458,7 @@
                 socket.emit('send_message', {
                     userId: currentUser.id,
                     content,
-                    groupId
+                    groupId: groupDbId // Use DB ID
                 });
                 messageInput.value = '';
             } catch (error) {
@@ -659,30 +688,6 @@
         if (messageInput) messageInput.focus();
     }, 1000);
 
-    // --- Initialize chat ---
-    async function initializeChat() {
-        showLoader('Entering the tunnel...', 'Loading your group chat');
-        
-        try {
-            await Promise.all([
-                fetchMessages(),
-                fetchOnlineUsers()
-            ]);
-            
-            hideLoader();
-            
-            // Show welcome message
-            setTimeout(() => {
-                showMessage(`Welcome to ${groupName}!`, 'success');
-            }, 500);
-            
-        } catch (error) {
-            hideLoader();
-            showMessage('Failed to load chat. Please refresh the page.', 'error');
-            console.error('Error initializing chat:', error);
-        }
-    }
-
     // --- Click outside to close mobile online users ---
     document.addEventListener('click', (e) => {
         if (!toggleOnlineUsers.contains(e.target) && !mobileOnlineUsers.contains(e.target)) {
@@ -704,6 +709,9 @@
 
     // --- Cleanup on page unload ---
     window.addEventListener('beforeunload', () => {
+        if (groupDbId) {
+            socket.emit('leave_group', groupDbId);
+        }
         if (window.socket) window.socket.disconnect();
     });
 
