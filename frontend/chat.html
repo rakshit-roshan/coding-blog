@@ -378,6 +378,19 @@
     });
     window.socket = socket;
 
+    // Add connection status logging
+    socket.on('connect', () => {
+        console.log('Socket connected successfully');
+    });
+
+    socket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error);
+    });
+
+    socket.on('disconnect', (reason) => {
+        console.log('Socket disconnected:', reason);
+    });
+
     async function initializeChat() {
         showLoader('Entering the tunnel...', 'Loading your group chat');
         try {
@@ -445,8 +458,28 @@
     if (messageForm) {
         messageForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            console.log('Form submitted'); // Debug log
+            
             const content = messageInput.value.trim();
-            if (!content || !currentUser || !groupDbId) return;
+            console.log('Message content:', content); // Debug log
+            console.log('Current user:', currentUser); // Debug log
+            console.log('Group DB ID:', groupDbId); // Debug log
+            
+            if (!content || !currentUser || !groupDbId) {
+                console.log('Validation failed - content:', !!content, 'user:', !!currentUser, 'groupDbId:', !!groupDbId); // Debug log
+                return;
+            }
+            
+            console.log('About to emit send_message with:', { userId: currentUser.id, content, groupId: groupDbId }); // Debug log
+            
+            // Check if socket is connected
+            console.log('Socket connected:', socket.connected); // Debug log
+            if (!socket.connected) {
+                console.error('Socket is not connected!');
+                showMessage('Not connected to server. Please refresh the page.', 'error');
+                return;
+            }
+            
             messageInput.disabled = true;
             const submitBtn = messageForm.querySelector('button[type="submit"]');
             const originalBtnText = submitBtn.innerHTML;
@@ -457,12 +490,15 @@
                 <span class="hidden sm:inline">Sending...</span>
             `;
             submitBtn.disabled = true;
+            
             try {
+                console.log('Emitting send_message event...'); // Debug log
                 socket.emit('send_message', {
                     userId: currentUser.id,
                     content,
                     groupId: groupDbId // Use DB ID
                 });
+                console.log('send_message event emitted successfully'); // Debug log
                 messageInput.value = '';
             } catch (error) {
                 console.error('Error sending message:', error);
