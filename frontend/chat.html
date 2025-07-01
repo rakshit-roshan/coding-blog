@@ -357,7 +357,22 @@
         });
     }
 
-    // --- Fetch and render messages ---
+    // --- Socket.io setup ---
+    const socket = io('http://coding-blog-kdzv.onrender.com'); // Change to your backend URL if needed
+    window.socket = socket;
+
+    // On connect, join group room and notify server of user
+    socket.on('connect', () => {
+        socket.emit('user_connected', currentUser.id);
+        socket.emit('join_group', groupId);
+    });
+
+    // On disconnect, leave group room
+    window.addEventListener('beforeunload', () => {
+        socket.emit('leave_group', groupId);
+    });
+
+    // --- Fetch and render messages (initial load only) ---
     async function fetchMessages() {
         if (!groupId) return;
         try {
@@ -368,6 +383,54 @@
         } catch (error) {
             console.error('Error fetching messages:', error);
         }
+    }
+    fetchMessages(); // Initial load only
+
+    // --- Listen for new messages in real-time ---
+    socket.on('new_message', (msg) => {
+        // Only render if message is for this group
+        if (msg.groupId && msg.groupId != groupId) return;
+        // Fetch latest messages (or push to UI if you want to optimize)
+        fetchMessages();
+    });
+
+    // --- Send message using socket.io ---
+    if (messageForm) {
+        messageForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const content = messageInput.value.trim();
+            if (!content || !currentUser || !groupId) return;
+
+            // Disable form while sending
+            messageInput.disabled = true;
+            const submitBtn = messageForm.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.innerHTML = `
+                <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                <span class="hidden sm:inline">Sending...</span>
+            `;
+            submitBtn.disabled = true;
+
+            try {
+                socket.emit('send_message', {
+                    userId: currentUser.id,
+                    content,
+                    groupId
+                });
+                messageInput.value = '';
+            } catch (error) {
+                console.error('Error sending message:', error);
+                showMessage('Failed to send message', 'error');
+            } finally {
+                // Re-enable form
+                messageInput.disabled = false;
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+                messageInput.focus();
+            }
+        });
     }
 
     // --- User color generator ---
@@ -469,46 +532,6 @@
         });
 
         lastRenderedMessages = messages.slice();
-    }
-
-    // --- Send message ---
-    if (messageForm) {
-        messageForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const content = messageInput.value.trim();
-            if (!content || !currentUser || !groupId) return;
-
-            // Disable form while sending
-            messageInput.disabled = true;
-            const submitBtn = messageForm.querySelector('button[type="submit"]');
-            const originalBtnText = submitBtn.innerHTML;
-            submitBtn.innerHTML = `
-                <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                </svg>
-                <span class="hidden sm:inline">Sending...</span>
-            `;
-            submitBtn.disabled = true;
-
-            try {
-                await fetch(`https://coding-blog-kdzv.onrender.com/api/groups/${groupId}/messages`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: currentUser.id, content })
-                });
-                messageInput.value = '';
-                fetchMessages();
-            } catch (error) {
-                console.error('Error sending message:', error);
-                showMessage('Failed to send message', 'error');
-            } finally {
-                // Re-enable form
-                messageInput.disabled = false;
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnText;
-                messageInput.focus();
-            }
-        });
     }
 
     // --- Fetch and render online/offline users ---
@@ -724,18 +747,6 @@
           console.log('ServiceWorker registration failed:', error);
       });
     }
-
-    // --- Socket.io: Connect and emit user_connected ---
-    window.socket = io('https://coding-blog-kdzv.onrender.com'); // Use your backend URL
-    if (currentUser && currentUser.id) {
-        console.log('Emitting user_connected with ID:', currentUser.id);
-        window.socket.emit('user_connected', currentUser.id);
-    }
-
-    // --- Listen for 'online_users_changed' event ---
-    window.socket.on('online_users_changed', () => {
-        fetchOnlineUsers();
-    });
 
     // --- Notification functionality ---
     let currentTargetUser = null;
