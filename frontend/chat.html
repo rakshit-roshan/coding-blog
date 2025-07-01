@@ -429,7 +429,7 @@
     // --- Listen for new messages in real-time ---
     socket.on('new_message', (msg) => {
         console.log('Received new_message event:', msg); // Debug log
-        if (msg.groupId && msg.groupId != groupDbId) return;
+        if (msg.groupId && Number(msg.groupId) !== Number(groupDbId)) return;
         fetchMessages();
     });
 
