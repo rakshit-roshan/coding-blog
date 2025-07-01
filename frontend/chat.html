@@ -313,12 +313,23 @@
     let groupDbId = null;
 
     async function fetchGroupDbId() {
-        if (!groupId) return;
+        console.log('fetchGroupDbId called with groupId:', groupId); // Debug log
+        if (!groupId) {
+            console.log('No groupId found, returning early'); // Debug log
+            return;
+        }
         try {
+            console.log('Fetching group info from:', `https://coding-blog-kdzv.onrender.com/api/groups/${groupId}`); // Debug log
             const res = await fetch(`https://coding-blog-kdzv.onrender.com/api/groups/${groupId}`);
-            if (!res.ok) throw new Error('Failed to fetch group info');
+            console.log('Response status:', res.status); // Debug log
+            if (!res.ok) {
+                console.error('Failed to fetch group info, status:', res.status); // Debug log
+                throw new Error('Failed to fetch group info');
+            }
             const group = await res.json();
+            console.log('Group data received:', group); // Debug log
             groupDbId = group.id; // This is the DB ID
+            console.log('Group DB ID set to:', groupDbId); // Debug log
         } catch (error) {
             console.error('Error fetching group DB ID:', error);
         }
