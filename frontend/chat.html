@@ -358,16 +358,13 @@
     }
 
     // --- Socket.io setup ---
-    const socket = io('http://coding-blog-kdzv.onrender.com'); // Change to your backend URL if needed
+    const socket = io('http://coding-blog-kdzv.onrender.com');
     window.socket = socket;
 
-    // On connect, join group room and notify server of user
     socket.on('connect', () => {
         socket.emit('user_connected', currentUser.id);
         socket.emit('join_group', groupId);
     });
-
-    // On disconnect, leave group room
     window.addEventListener('beforeunload', () => {
         socket.emit('leave_group', groupId);
     });
@@ -386,12 +383,29 @@
     }
     fetchMessages(); // Initial load only
 
+    // --- Fetch and render online users (initial load only) ---
+    async function fetchOnlineUsers() {
+        try {
+            const res = await fetch(`https://coding-blog-kdzv.onrender.com/api/groups/${groupId}/members`);
+            if (!res.ok) throw new Error('Failed to fetch members');
+            const users = await res.json();
+            renderOnlineUsers(users);
+        } catch (error) {
+            console.error('Error fetching online users:', error);
+            renderOnlineUsers([{ username: currentUser.username, email: currentUser.email, is_online: true }]);
+        }
+    }
+    fetchOnlineUsers(); // Initial load only
+
     // --- Listen for new messages in real-time ---
     socket.on('new_message', (msg) => {
-        // Only render if message is for this group
         if (msg.groupId && msg.groupId != groupId) return;
-        // Fetch latest messages (or push to UI if you want to optimize)
         fetchMessages();
+    });
+
+    // --- Listen for online users change in real-time ---
+    socket.on('online_users_changed', () => {
+        fetchOnlineUsers();
     });
 
     // --- Send message using socket.io ---
@@ -400,8 +414,6 @@
             e.preventDefault();
             const content = messageInput.value.trim();
             if (!content || !currentUser || !groupId) return;
-
-            // Disable form while sending
             messageInput.disabled = true;
             const submitBtn = messageForm.querySelector('button[type="submit"]');
             const originalBtnText = submitBtn.innerHTML;
@@ -412,7 +424,6 @@
                 <span class="hidden sm:inline">Sending...</span>
             `;
             submitBtn.disabled = true;
-
             try {
                 socket.emit('send_message', {
                     userId: currentUser.id,
@@ -424,7 +435,6 @@
                 console.error('Error sending message:', error);
                 showMessage('Failed to send message', 'error');
             } finally {
-                // Re-enable form
                 messageInput.disabled = false;
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalBtnText;
@@ -535,23 +545,6 @@
     }
 
     // --- Fetch and render online/offline users ---
-    async function fetchOnlineUsers() {
-        try {
-            const res = await fetch(`https://coding-blog-kdzv.onrender.com/api/groups/${groupId}/members`);
-            if (!res.ok) throw new Error('Failed to fetch members');
-            const users = await res.json();
-            renderOnlineUsers(users);
-        } catch (error) {
-            console.error('Error fetching online users:', error);
-            // Show current user only as fallback
-            renderOnlineUsers([{ 
-                username: currentUser.username, 
-                email: currentUser.email, 
-                is_online: true 
-            }]);
-        }
-    }
-
     function renderOnlineUsers(users) {
         const userCount = users.length || 1;
         if (onlineCount) onlineCount.textContent = userCount;
@@ -609,22 +602,6 @@
         renderUserList(onlineListMobile);
     }
 
-    // --- Auto-refresh functionality ---
-    let messageInterval;
-    let userInterval;
-
-    function startAutoRefresh() {
-        // Fetch messages every 2 seconds
-        messageInterval = setInterval(fetchMessages, 2000);
-        // Fetch users every 10 seconds
-        userInterval = setInterval(fetchOnlineUsers, 5000);
-    }
-
-    function stopAutoRefresh() {
-        if (messageInterval) clearInterval(messageInterval);
-        if (userInterval) clearInterval(userInterval);
-    }
-
     // --- Utility function for showing toast messages ---
     function showMessage(message, type) {
         const toast = document.createElement('div');
@@ -663,9 +640,8 @@
     // --- Page visibility handling ---
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
-            stopAutoRefresh();
+            // Remove or comment out all setInterval, startAutoRefresh, stopAutoRefresh, and related calls
         } else {
-            startAutoRefresh();
             fetchMessages();
             fetchOnlineUsers();
         }
@@ -692,7 +668,6 @@
                 fetchOnlineUsers()
             ]);
             
-            startAutoRefresh();
             hideLoader();
             
             // Show welcome message
@@ -729,7 +704,6 @@
     // --- Cleanup on page unload ---
     window.addEventListener('beforeunload', () => {
         if (window.socket) window.socket.disconnect();
-        stopAutoRefresh();
     });
 
     // --- Start the chat application ---

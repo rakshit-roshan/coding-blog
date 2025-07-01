@@ -185,10 +185,10 @@ const groupController = {
       if (!group) return res.status(404).json({ error: 'Group not found' });
       const members = await groupModel.getMembers(group.id);
       console.log('[getGroupMembers] members from DB:', members);
-      // Add is_online property
+      // Add is_online property (robust: compare as numbers)
       const membersWithStatus = members.map(m => ({
         ...m,
-        is_online: onlineUsers.has(m.id)
+        is_online: onlineUsers.has(Number(m.id))
       }));
       res.json(membersWithStatus);
     } catch (err) {
