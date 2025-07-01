@@ -2,6 +2,7 @@ const http = require('http');
 const socketio = require('socket.io');
 const app = require('./app');
 const messageModel = require('./models/messageModel');
+const groupModel = require('./models/groupModel');
 
 const server = http.createServer(app);
 const io = socketio(server, {
@@ -46,12 +47,21 @@ io.on('connection', (socket) => {
     try {
       let msg;
       if (groupId) {
-        msg = await messageModel.createForGroup(userId, groupId, content);
+        // Look up the group by public group_id to get the database ID
+        const group = await groupModel.findByGroupId(groupId);
+        if (!group) {
+          console.error('[socket.io] Group not found for groupId:', groupId);
+          return;
+        }
+        const groupDbId = group.id;
+        console.log('[socket.io] Found group DB ID:', groupDbId, 'for public group ID:', groupId);
+        
+        msg = await messageModel.createForGroup(userId, groupDbId, content);
         // Optionally, use socket.io rooms for group chat
-        io.to(`group_${groupId}`).emit('new_message', {
+        io.to(`group_${groupDbId}`).emit('new_message', {
           userId,
           content,
-          groupId,
+          groupId: groupDbId, // Send back the DB ID
           id: msg.id,
           created_at: msg.created_at
         });
